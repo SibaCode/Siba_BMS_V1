@@ -21,7 +21,7 @@ const Index = () => {
           <div className="max-w-3xl mx-auto">
             <Store className="h-16 w-16 text-primary mx-auto mb-8" />
             <h1 className="text-5xl font-bold mb-6 text-foreground">
-              Complete Online Store System
+              Complete Online Store System Test
             </h1>
             <p className="text-xl text-muted-foreground mb-8">
               Professional e-commerce solution with inventory management, order tracking, 
