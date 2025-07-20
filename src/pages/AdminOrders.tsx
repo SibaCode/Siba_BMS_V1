@@ -135,6 +135,11 @@ const AdminOrders = () => {
                 <Download className="h-4 w-4 mr-2" />
                 Export CSV
               </Button>
+
+          
+          <Button asChild variant="destructive">
+              <Link to="/create-order">Create Order</Link>
+            </Button>
             </div>
           </div>
         </div>

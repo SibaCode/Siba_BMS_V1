@@ -16,7 +16,7 @@ import {
   TrendingUp, 
   AlertTriangle,
   CreditCard,
-  Truck,
+  Truck,User,
   Plus,
   Eye,
   Search,
@@ -25,6 +25,8 @@ import {
   BarChart3
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import RecentOrders from "./components/RecentOrders";
+import CustomerOverview from "./components/CustomerOverview";
 
 // Mock data for charts
 const salesData = [
@@ -72,7 +74,14 @@ const AdminDashboard = () => {
   const [monthlyRevenue] = useState(12340);
   const [products, setProducts] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
+  const { customers } = CustomerOverview();
 
+  // When you fetch your customers data, update the state
+  // For example:
+  // setCustomers(fetchedCustomers);
+  
+  <CustomerOverview customers={customers} />
+  
 console.log(products)
   useEffect(() => {
     const fetchStats = async () => {
@@ -530,7 +539,9 @@ const totalRevenue = paidOrders.reduce((sum, order) => sum + (order.total || 0),
           <Button asChild variant="outline" className="card-hover">
             <a href="/admin/inventory">View Full Inventory</a>
           </Button>
+          
         </div>
+        
       </CardContent>
     </Card>
       </motion.div>
@@ -538,89 +549,61 @@ const totalRevenue = paidOrders.reduce((sum, order) => sum + (order.total || 0),
         className="grid grid-cols-1 lg:grid-cols-2 gap-6"
         variants={containerVariants}
       >
-        <motion.div variants={cardVariants}>
+              <motion.div variants={cardVariants}>
           <Card className="card-hover shadow-elegant">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <AlertTriangle className="h-5 w-5 text-amber-500" />
-                <span>Low Stock Alerts</span>
+                <User className="h-5 w-5 text-blue-500" /> 
+                <span>Recent Customers</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {[
-                  { name: "Premium Aprons", stock: 3, urgent: true },
-                  { name: "Travel Umbrellas", stock: 2, urgent: true },
-                  { name: "Limited Edition Mugs", stock: 1, urgent: true },
-                  { name: "Custom T-Shirts", stock: 5, urgent: false }
-                ].map((item, index) => (
-                  <motion.div 
-                    key={item.name}
-                    className="flex justify-between items-center p-3 rounded-lg bg-secondary/50 transition-smooth hover:bg-secondary"
+              <div className="space-y-4 max-h-64 overflow-y-auto">
+              {loading ? (
+                <p className="text-muted-foreground text-center">Loading...</p>
+              ) : customers.length === 0 ? (
+                <p className="text-muted-foreground text-center">No customers found.</p>
+              ) : (
+                customers.map((customer, index) => (
+                  <motion.div
+                    key={customer.orderNumber}
+                    className="flex flex-col sm:flex-row sm:justify-between p-3 rounded-lg bg-secondary/50 transition-smooth hover:bg-secondary"
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.1 }}
                   >
-                    <span className="text-sm font-medium">{item.name}</span>
-                    <Badge variant={item.urgent ? "destructive" : "secondary"}>
-                      {item.stock} left
-                    </Badge>
+                    <div className="flex flex-col sm:flex-row sm:space-x-6 text-sm font-medium">
+                      <span>{customer.name}</span>
+                      <span className="text-muted-foreground">{customer.orderNumber}</span>
+                      <Badge variant="default" className="self-start sm:self-center">
+                        {customer.totalOrders} orders
+                      </Badge>
+                    </div>
+                    <div className="flex flex-col sm:flex-row sm:space-x-6 text-xs text-muted-foreground mt-2 sm:mt-0">
+                      <span>{customer.location}</span>
+                      <span>{customer.phone}</span>
+                      <span>{customer.email}</span>
+                    </div>
                   </motion.div>
-                ))}
-                <Button asChild variant="outline" size="sm" className="w-full mt-3 card-hover">
-                  <Link to="/admin/inventory">
-                    View All Inventory
+                 ))
+                )}
+               
+              </div>
+              <div className="mt-4 flex justify-between items-center">
+          
+          <Button asChild variant="outline" size="sm" className="w-full mt-3 card-hover">
+                  <Link to="/admin/customers">
+                    View All Customers
                   </Link>
                 </Button>
-              </div>
+        </div>
             </CardContent>
           </Card>
         </motion.div>
 
-        <motion.div variants={cardVariants}>
-          <Card className="card-hover shadow-elegant">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <TrendingUp className="h-5 w-5 text-green-500" />
-                <span>Recent Orders</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {[
-                  { id: "#1234", time: "2 hours ago", amount: 450, status: "completed" },
-                  { id: "#1235", time: "5 hours ago", amount: 230, status: "processing" },
-                  { id: "#1236", time: "1 day ago", amount: 180, status: "completed" },
-                  { id: "#1237", time: "1 day ago", amount: 320, status: "pending" }
-                ].map((order, index) => (
-                  <motion.div 
-                    key={order.id}
-                    className="flex justify-between items-center p-3 rounded-lg bg-secondary/50 transition-smooth hover:bg-secondary"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                  >
-                    <div>
-                      <div className="text-sm font-medium">Order {order.id}</div>
-                      <div className="text-xs text-muted-foreground">{order.time}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm font-semibold">R{order.amount}</div>
-                      <Badge variant={order.status === 'completed' ? 'default' : 'secondary'} className="text-xs">
-                        {order.status}
-                      </Badge>
-                    </div>
-                  </motion.div>
-                ))}
-                <Button asChild variant="outline" size="sm" className="w-full mt-3 card-hover">
-                  <Link to="/admin/orders">
-                    View All Orders
-                  </Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+
+        <RecentOrders />
+
       </motion.div>
 
      

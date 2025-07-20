@@ -77,6 +77,11 @@ const App = () => (
                 <AdminExpensesPage />
               </AdminLayout>
             } />
+            {/* <Route path="/admin/create-order" element={
+              <AdminLayout title="Expense Management">
+                <AdminExpensesPage />
+              </AdminLayout>
+            } /> */}
             
             {/* Public store routes */}
             <Route path="/storefront" element={<StorefrontPage />} />
