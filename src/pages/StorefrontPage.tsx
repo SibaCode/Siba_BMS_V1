@@ -40,7 +40,8 @@ const cardVariants = {
 
 const StorefrontPage = () => {
   const [products, setProducts] = useState<any[]>([]);
-  const [businessInfo, setBusinessInfo] = useState<any>(null);
+  const [businessInfo, setBusinessInfo] = useState<any[]>([]);
+
 
   useEffect(() => {
     async function fetchProducts() {
@@ -169,7 +170,7 @@ const StorefrontPage = () => {
                       {info.description2 || ""}
                     </p>
                     <div className="flex flex-wrap gap-3 pt-4">
-                      {info.badges?.map((badge: string, idx: number) => (
+                    {(info.badges || []).map((badge: string, idx: number) => (
                         <Badge key={idx} variant="secondary" className="px-3 py-1">
                           {badge}
                         </Badge>
