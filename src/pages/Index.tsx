@@ -29,7 +29,7 @@ const Index = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button asChild size="lg" className="text-lg px-8">
-                <Link to="/store">
+                <Link to="/storefront">
                   <ShoppingCart className="h-5 w-5 mr-2" />
                   Visit Store
                   <ArrowRight className="h-5 w-5 ml-2" />
