@@ -67,7 +67,6 @@ const App = () => (
                 <BusinessInfoPage />
               </AdminLayout>
             } />
-            <Route path="/storefront" element={<StorefrontPage />} />
             <Route path="/admin/settings/categories" element={
               <AdminLayout title="Category Management">
                 <AdminCategoriesPage />
@@ -80,6 +79,7 @@ const App = () => (
             } />
             
             {/* Public store routes */}
+            <Route path="/storefront" element={<StorefrontPage />} />
             <Route path="/store" element={<PublicStore />} />
             <Route path="/store/product/:productId" element={<ProductDetailsPage />} />
             <Route path="/store/cart" element={<ShoppingCart />} />
