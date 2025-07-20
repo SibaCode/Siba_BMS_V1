@@ -56,7 +56,6 @@ const menuItems = [
     items: [
       { title: "Orders", url: "/admin/orders" },
       { title: "Customers", url: "/admin/customers" },
-      { title: "Invoices", url: "/admin/invoice" },
     ],
   },
   {
