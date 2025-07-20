@@ -81,7 +81,7 @@ const App = () => (
             {/* Public store routes */}
             <Route path="/storefront" element={<StorefrontPage />} />
             <Route path="/store" element={<PublicStore />} />
-            <Route path="/store/product/:productId" element={<ProductDetailsPage />} />
+            <Route path="/store/product/:id" element={<ProductDetailsPage />} />
             <Route path="/store/cart" element={<ShoppingCart />} />
             <Route path="/store/checkout" element={<Checkout />} />
             <Route path="/store/success" element={<OrderSuccess />} />

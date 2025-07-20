@@ -26,21 +26,23 @@ interface Product {
 }
 
 const ProductDetailsPage = () => {
-  const { productId } = useParams<{ productId: string }>();
+  const { id } = useParams<{ id: string }>();
   const { addItem } = useCart();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [selectedVariant, setSelectedVariant] = useState<string | null>(null);
+console.log(id)
+console.log(product)
 
   useEffect(() => {
     const fetchProduct = async () => {
-      if (!productId) return;
+      if (!id) return;
 
       try {
         const q = query(
           collection(db, "products"),
-          where("id", "==", parseInt(productId))
+          where("id", "==", parseInt(id))
         );
         const querySnapshot = await getDocs(q);
         
@@ -48,7 +50,7 @@ const ProductDetailsPage = () => {
           const doc = querySnapshot.docs[0];
           const productData = { id: doc.id, ...doc.data() } as Product;
           setProduct(productData);
-          
+          console.log(productData)
           // Set default variant if available
           if (productData.variants && productData.variants.length > 0) {
             setSelectedVariant(productData.variants[0].id);
@@ -62,7 +64,7 @@ const ProductDetailsPage = () => {
     };
 
     fetchProduct();
-  }, [productId]);
+  }, [id]);
 
   const handleAddToCart = () => {
     if (!product) return;

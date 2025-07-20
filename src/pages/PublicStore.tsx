@@ -170,7 +170,7 @@ const PublicStore = () => {
                     className="flex-1"
                     asChild
                   >
-                    <Link to={`/store/product/${product.productID}`}>
+                    <Link to={`/store/product/${product.id}`}>
                       <Eye className="h-4 w-4 mr-2" />
                       View Details
                     </Link>
