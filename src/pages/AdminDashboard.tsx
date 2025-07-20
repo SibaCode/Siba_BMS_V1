@@ -15,6 +15,8 @@ import {
   DollarSign, 
   TrendingUp, 
   AlertTriangle,
+  CreditCard,
+  Truck,
   Plus,
   Eye,
   Search,
@@ -61,23 +63,27 @@ const cardVariants = {
 
 const AdminDashboard = () => {
   const [totalProducts, setTotalProducts] = useState(0);
-  const [totalOrders, setTotalOrders] = useState(0);
+  // const [totalOrders, setTotalOrders] = useState(0);
   const [totalCustomers, setTotalCustomers] = useState(0);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [lowStockCount, setLowStockCount] = useState(6);
+  // const [lowStockCount, setLowStockCount] = useState(6);
   const [todaySales] = useState(850);
   const [monthlyRevenue] = useState(12340);
+  const [products, setProducts] = useState<any[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
 
+console.log(products)
   useEffect(() => {
     const fetchStats = async () => {
       try {
         const productsSnapshot = await getDocs(collection(db, "products"));
         const ordersSnapshot = await getDocs(collection(db, "orders"));
         const customersSnapshot = await getDocs(collection(db, "customers"));
+        console.log(productsSnapshot)
 
         setTotalProducts(productsSnapshot.size);
-        setTotalOrders(ordersSnapshot.size);
+        // setTotalOrders(ordersSnapshot.size);
         setTotalCustomers(customersSnapshot.size);
       } catch (err) {
         console.error("Error fetching stats", err);
@@ -88,40 +94,215 @@ const AdminDashboard = () => {
 
     fetchStats();
   }, []);
+ ;
 
-  const statsCards = [
-    {
-      title: "Total Products",
-      value: loading ? "..." : totalProducts,
-      description: "Active in inventory",
-      icon: Package,
-      color: "from-blue-500 to-blue-600",
-      change: "+2 this week"
-    },
-    {
-      title: "Low Stock Items",
-      value: loading ? "..." : lowStockCount,
-      description: "Need restocking",
-      icon: AlertTriangle,
-      color: "from-amber-500 to-orange-600",
-      change: "Urgent attention"
-    },
-    {
-      title: "Sales Today",
-      value: `R${todaySales}`,
-      description: "Today's revenue",
-      icon: DollarSign,
-      color: "from-green-500 to-emerald-600",
-      change: "+12% vs yesterday"
-    },
-    {
-      title: "Revenue This Month",
-      value: `R${monthlyRevenue}`,
-      description: "Monthly earnings",
-      icon: TrendingUp,
-      color: "from-purple-500 to-pink-600",
-      change: "+18% vs last month"
+  const fetchProducts = async () => {
+    setLoading(true);
+    try {
+      const querySnapshot = await getDocs(collection(db, "products"));
+      const items = querySnapshot.docs.map(doc => ({
+      docId: doc.id,   // "apron", "mug", etc.
+      ...doc.data()
+    }));
+      console.log(items)
+      setProducts(items);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+    } finally {
+      setLoading(false);
     }
+  };
+  const fetchOrders = async () => {
+    setLoading(true);
+    try {
+      const querySnapshot = await getDocs(collection(db, "orders"));
+      const items = querySnapshot.docs.map(doc => ({
+        docId: doc.id,
+        ...doc.data(),
+      }));
+      console.log("Orders:", items);
+      setOrders(items);
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    fetchProducts();
+    fetchOrders();
+  }, [])
+// Threshold for low stock alert per category
+const lowStockThreshold = 10;
+
+// Aggregate stock by category (object)
+const categoryStock = products.reduce((acc, product) => {
+  const totalStockForProduct = product.variants.reduce(
+    (sum, variant) => sum + (variant.stockQuantity || 0),
+    0
+  );
+  if (acc[product.category]) {
+    acc[product.category] += totalStockForProduct;
+  } else {
+    acc[product.category] = totalStockForProduct;
+  }
+  return acc;
+}, {} as Record<string, number>);
+
+// Convert to array and add isLow flag
+const categoryStockSummary = Object.entries(categoryStock).map(
+  ([category, totalStock]: [string, number]) => ({
+    category,
+    totalStock,
+    isLow: totalStock < lowStockThreshold,
+  })
+);
+const totalStock = categoryStockSummary.reduce(
+  (sum, { totalStock }) => sum + totalStock,
+  0
+);
+const lowStockCount = categoryStockSummary.filter(c => c.isLow).length;
+const totalOrders = orders.length;
+
+const paidOrders = orders.filter(o => o.paymentStatus?.toLowerCase() === "paid");
+const pendingPayments = orders.filter(o => o.paymentStatus?.toLowerCase() === "pending");
+const failedPayments = orders.filter(o => o.paymentStatus?.toLowerCase() === "failed");
+const processingPayments = orders.filter(o => o.paymentStatus?.toLowerCase() === "processing");
+
+const deliveredOrders = orders.filter(
+  o =>
+    o.deliveryStatus?.toLowerCase() === "delivered" ||
+    o.status?.toLowerCase() === "delivered"
+);
+const notDeliveredOrders = orders.length - deliveredOrders.length;
+
+const totalRevenue = paidOrders.reduce((sum, order) => sum + (order.total || 0), 0);
+
+
+
+  // Flatten variants for the table
+  const flattenedVariants = products.flatMap((product) =>
+    product.variants.map((variant) => ({
+      docId: product.docId,
+      name: product.name,
+      category: product.category,
+      variantType: variant.type,
+      size: variant.size,
+      color: variant.color,
+      stockQuantity: variant.stockQuantity,
+      sellingPrice: variant.sellingPrice,
+      productImage: product.productImage,
+      status: variant.stockQuantity <= 5 ? "Low Stock" : product.status,
+    }))
+  );
+
+  // Filter based on search input (checks name, category, variantType, color, size)
+  const filteredVariants = flattenedVariants.filter((item) =>
+    [
+      item.name,
+      item.category,
+      item.variantType,
+      item.color,
+      item.size,
+    ]
+      .join(" ")
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase())
+  );
+// Count low stock categories
+  const statsCards = [
+ 
+    {
+      title: "Stock Overview",
+      value: `${totalStock} units `, // or total products count if desired
+      description: (
+        <ul className="text-sm max-h-28 overflow-y-auto space-y-1">
+          {categoryStockSummary.map(({ category, totalStock, isLow }) => (
+            <li
+              key={category}
+              className={isLow ? "text-red-600 font-semibold" : "text-gray-700"}
+              title={isLow ? "Low stock alert" : ""}
+            >
+              {category} → {totalStock} units
+            </li>
+          ))}
+        </ul>
+      ),
+      icon: Package,
+      color: "from-orange-500 to-orange-600",
+      change: lowStockCount > 0
+        ? `${lowStockCount} categor${lowStockCount > 1 ? "ies" : "y"} low in stock`
+        : "Stock levels are healthy",
+      changeColor: lowStockCount > 0 ? "text-red-600" : "text-green-600",
+    }
+    ,    
+    {
+  title: "Order Summary",
+  value: `${orders.length} orders`,
+  description: (
+    <ul className="text-sm space-y-1">
+      <li className="text-green-600">Delivered → {deliveredOrders.length}</li>
+      <li className="text-gray-700">Not Delivered → {notDeliveredOrders}</li>
+    </ul>
+  ),
+  icon: Truck,
+  color: "from-gray-500 to-gray-600",
+  change: notDeliveredOrders > 0
+    ? `${notDeliveredOrders} pending`
+    : "All delivered",
+  changeColor: notDeliveredOrders > 0 ? "text-yellow-600" : "text-green-600"
+},
+{
+  title: "Payment Summary",
+  value: `${orders.length} orders`,
+  description: (
+    <ul className="text-sm space-y-1">
+      <li className="text-yellow-600">Pending → {pendingPayments.length}</li>
+      <li className="text-red-600">Failed → {failedPayments.length}</li>
+      <li className="text-blue-600">Processing → {processingPayments.length}</li>
+    </ul>
+  ),
+  icon: CreditCard,
+  color: "from-yellow-500 to-yellow-600",
+  change: pendingPayments.length > 0
+    ? `${pendingPayments.length} need action`
+    : "No pending payments",
+  changeColor: pendingPayments.length > 0 ? "text-yellow-600" : "text-green-600"
+}
+
+
+    // {
+    //   title: "Total Products",
+    //   value: loading ? "..." : totalProducts,
+    //   description: "Active in inventory",
+    //   icon: Package,
+    //   color: "from-blue-500 to-blue-600",
+    //   change: "+2 this week"
+    // },
+    // {
+    //   title: "Low Stock Items",
+    //   value: loading ? "..." : lowStockCount,
+    //   description: "Need restocking",
+    //   icon: AlertTriangle,
+    //   color: "from-amber-500 to-orange-600",
+    //   change: "Urgent attention"
+    // },
+    // {
+    //   title: "Sales Today",
+    //   value: `R${todaySales}`,
+    //   description: "Today's revenue",
+    //   icon: DollarSign,
+    //   color: "from-green-500 to-emerald-600",
+    //   change: "+12% vs yesterday"
+    // },
+    // {
+    //   title: "Revenue This Month",
+    //   value: `R${monthlyRevenue}`,
+    //   description: "Monthly earnings",
+    //   icon: TrendingUp,
+    //   color: "from-purple-500 to-pink-600",
+    //   change: "+18% vs last month"
+    // }
   ];
 
   return (
@@ -137,7 +318,7 @@ const AdminDashboard = () => {
         variants={cardVariants}
       >
         <div>
-          <h1 className="text-3xl font-bold text-gradient">Dashboard Overview</h1>
+          {/* <h1 className="text-3xl font-bold text-gradient">Dashboard Overview</h1> */}
           <p className="text-muted-foreground">Welcome back! Here's what's happening with your business.</p>
         </div>
         <div className="flex items-center gap-2">
@@ -154,7 +335,7 @@ const AdminDashboard = () => {
       </motion.div>
 
       {/* Quick Actions */}
-      <motion.div 
+      {/* <motion.div 
         className="flex flex-wrap gap-3"
         variants={cardVariants}
       >
@@ -182,7 +363,7 @@ const AdminDashboard = () => {
             Business Info
           </Link>
         </Button>
-      </motion.div>
+      </motion.div> */}
 
       {/* Stats Grid */}
       <motion.div 
@@ -210,7 +391,7 @@ const AdminDashboard = () => {
       </motion.div>
 
       {/* Charts Section */}
-      <motion.div 
+      {/* <motion.div 
         className="grid grid-cols-1 lg:grid-cols-2 gap-6"
         variants={containerVariants}
       >
@@ -263,9 +444,96 @@ const AdminDashboard = () => {
             </CardContent>
           </Card>
         </motion.div>
-      </motion.div>
+      </motion.div> */}
 
       {/* Recent Activity & Alerts */}
+       {/* Enhanced Inventory Table */}
+      <motion.div variants={cardVariants}>
+      <Card className="card-hover shadow-elegant">
+      <CardHeader>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <CardTitle>Inventory Overview</CardTitle>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search products..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 w-64"
+              />
+            </div>
+            <Button variant="outline" size="sm" className="card-hover">
+              <Filter className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Product Name</TableHead>
+              <TableHead>Category</TableHead>
+              <TableHead>Variant</TableHead>
+              <TableHead>Size</TableHead>
+              <TableHead>Color</TableHead>
+              <TableHead>Stock</TableHead>
+              <TableHead>Price (R)</TableHead>
+              <TableHead>Status</TableHead>
+              {/* <TableHead>Actions</TableHead> */}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredVariants.map((item, index) => (
+              <motion.tr
+                key={`${item.docId}-${item.variantType}-${item.size}-${item.color}`}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className="hover:bg-secondary/50 transition-smooth"
+              >
+                <TableCell className="font-medium flex items-center gap-2">
+                  {/* Optional: Small product image */}
+                  <img
+                    src={item.productImage}
+                    alt={item.name}
+                    className="w-8 h-8 object-cover rounded"
+                  />
+                  {item.name}
+                </TableCell>
+                <TableCell>{item.category}</TableCell>
+                <TableCell>{item.variantType}</TableCell>
+                <TableCell>{item.size}</TableCell>
+                <TableCell>{item.color}</TableCell>
+                <TableCell
+                  className={
+                    item.stockQuantity <= 5 ? "text-amber-600 font-medium" : ""
+                  }
+                >
+                  {item.stockQuantity}
+                </TableCell>
+                <TableCell>{item.sellingPrice}</TableCell>
+                <TableCell>
+                  <Badge variant={item.status === "Low Stock" ? "destructive" : "secondary"}>
+                    {item.status}
+                  </Badge>
+                </TableCell>
+              </motion.tr>
+            ))}
+          </TableBody>
+        </Table>
+        <div className="mt-4 flex justify-between items-center">
+          <p className="text-sm text-muted-foreground">
+            Showing {filteredVariants.length} of {flattenedVariants.length} variants
+          </p>
+          <Button asChild variant="outline" className="card-hover">
+            <a href="/admin/inventory">View Full Inventory</a>
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+      </motion.div>
       <motion.div 
         className="grid grid-cols-1 lg:grid-cols-2 gap-6"
         variants={containerVariants}
@@ -355,93 +623,7 @@ const AdminDashboard = () => {
         </motion.div>
       </motion.div>
 
-      {/* Enhanced Inventory Table */}
-      <motion.div variants={cardVariants}>
-        <Card className="card-hover shadow-elegant">
-          <CardHeader>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <CardTitle>Inventory Overview</CardTitle>
-              <div className="flex items-center gap-2">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search products..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 w-64"
-                  />
-                </div>
-                <Button variant="outline" size="sm" className="card-hover">
-                  <Filter className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Product Name</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Stock</TableHead>
-                  <TableHead>Price</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {[
-                  { name: "Custom T-Shirt", category: "Apparel", stock: 45, price: 120, status: "Active" },
-                  { name: "Coffee Mug", category: "Drinkware", stock: 23, price: 65, status: "Active" },
-                  { name: "Premium Apron", category: "Kitchen", stock: 3, price: 95, status: "Low Stock" },
-                  { name: "Laptop Bag", category: "Accessories", stock: 18, price: 150, status: "Active" },
-                  { name: "Water Bottle", category: "Drinkware", stock: 32, price: 45, status: "Active" }
-                ].filter(product => 
-                  product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  product.category.toLowerCase().includes(searchTerm.toLowerCase())
-                ).map((product, index) => (
-                  <motion.tr 
-                    key={product.name}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    className="hover:bg-secondary/50 transition-smooth"
-                  >
-                    <TableCell className="font-medium">{product.name}</TableCell>
-                    <TableCell>{product.category}</TableCell>
-                    <TableCell className={product.stock <= 5 ? "text-amber-600 font-medium" : ""}>
-                      {product.stock}
-                    </TableCell>
-                    <TableCell>R{product.price}</TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant={product.status === "Low Stock" ? "destructive" : "secondary"}
-                      >
-                        {product.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="sm" className="card-hover">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </motion.tr>
-                ))}
-              </TableBody>
-            </Table>
-            <div className="mt-4 flex justify-between items-center">
-              <p className="text-sm text-muted-foreground">
-                Showing 5 of 24 products
-              </p>
-              <Button asChild variant="outline" className="card-hover">
-                <Link to="/admin/inventory">
-                  View Full Inventory
-                </Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
+     
     </motion.div>
   );
 };
