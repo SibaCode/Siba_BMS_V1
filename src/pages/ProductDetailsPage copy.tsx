@@ -1,394 +1,441 @@
-import { useState, useEffect } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useState,useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { db } from "@/firebase"; // your Firebase config
+import { collection, getDocs } from "firebase/firestore";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useCart } from "@/contexts/CartContext";
-import { collection, getDocs, query, where } from "firebase/firestore";
-import { db } from "@/firebase";
-import { doc, getDoc } from "firebase/firestore";
-import { useToast } from "@/hooks/use-toast";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { doc, getDoc, updateDoc, setDoc } from "firebase/firestore";
 
-import {
-  ArrowLeft,
-  Plus,
-  Minus,
+import { 
+  ArrowLeft, 
+  Search, 
+  Filter, 
+  FileText, 
+  Download,
   ShoppingCart,
-  Star,
-  Store,
-  Package,
-  Truck,
-  Shield,
+  Eye
 } from "lucide-react";
 
-type Variant = {
-  id: string;
-  color: string;
-  size?: string;
-  sellingPrice: number;
-  images: string;
-};
+const AdminOrders = () => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [editingOrder, setEditingOrder] = useState<any | null>(null);
 
-type Product = {
-  id: string;
-  productID?: string;
-  name: string;
-  price?: number;
-  category?: string;
-  productImage?: string;
-  description?: string;
-  status?: string;
-  variants?: Variant[];
-};
-
-const ProductDetailsPage = () => {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const { addItem , itemCount} = useCart();
-  const { toast } = useToast();
-
-  const [product, setProduct] = useState<Product | null>(null);
+  // Mock data - in real app this would come from backend
+  const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
-  const [quantity, setQuantity] = useState(1);
-  const [selectedImage, setSelectedImage] = useState(0);
-
+  
   useEffect(() => {
-    fetchProduct();
-  }, [id]);
+    const fetchOrders = async () => {
+      try {
+        const snapshot = await getDocs(collection(db, "orders"));
+        const ordersData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        console.log(ordersData)
+        setOrders(ordersData);
+      } catch (error) {
+        console.error("Error fetching orders:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+  
+    fetchOrders();
+  }, []);
+  const handleEdit = (order: any) => {
+    setEditingOrder(order);
+    console.log(order)
+  };
+  
 
-  const fetchProduct = async () => {
-    if (!id) return;
-
-    setLoading(true);
+  const handleSaveChanges = async () => {
+    if (!editingOrder?.id) return;
+  
     try {
-      const docRef = doc(db, "products", id);
-      const docSnap = await getDoc(docRef);
-
+      const orderRef = doc(db, "orders", editingOrder.id);
+  
+      const docSnap = await getDoc(orderRef);
       if (docSnap.exists()) {
-        const data = docSnap.data();
-        const fetchedProduct: Product = {
-          id: docSnap.id,
-          ...(data as Product),
-        };
-        setProduct(fetchedProduct);
-console.log(fetchProduct)
-        if (fetchedProduct.variants && fetchedProduct.variants.length > 0) {
-          setSelectedVariant(fetchedProduct.variants[0]);
-        }
-      } else {
-        // Fallback mock data if no product found
-        if (id === "67") {
-          const fallbackProduct: Product = {
-            id: "67",
-            name: "Mock Product Title",
-            description:
-              "This is a fallback mock product used when no product is found.",
-            price: 10.99,
-            variants: [
-              { id: "v1", color: "Red", size: "M", sellingPrice: 10.99, images: "" },
-              { id: "v2", color: "Blue", size: "L", sellingPrice: 12.99, images: "" },
-            ],
-          };
-          setProduct(fallbackProduct);
-          setSelectedVariant(fallbackProduct.variants[0]);
-        } else {
-          console.warn(`No product found with ID: ${id}`);
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching product:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAddToCart = () => {
-    if (!product) return;
-
-    const price = selectedVariant?.sellingPrice || product.price || 0;
-    if (!selectedVariant) {
-        toast({
-          title: "Missing Selection",
-          description: "Please select size and color before adding to cart.",
-          variant: "destructive",
+        // Document exists, update it
+        await updateDoc(orderRef, {
+          paymentMethod: editingOrder.paymentMethod,
+          paymentStatus: editingOrder.paymentStatus,
+          deliveryStatus: editingOrder.deliveryStatus,
         });
-        return;
+      } else {
+        // Document does not exist, create it or handle error
+        await setDoc(orderRef, {
+          paymentMethod: editingOrder.paymentMethod,
+          paymentStatus: editingOrder.paymentStatus,
+          deliveryStatus: editingOrder.deliveryStatus,
+          // add other required fields here if needed
+        });
       }
-    
-    for (let i = 0; i < quantity; i++) {
-      addItem({
-        id: parseInt(product.id),
-        name: product.name,
-        price,
-        category: product.category,
-        image: product.productImage || selectedVariant?.images,
-      });
-
-    //   toast({
-    //     title: "Added to Cart",
-    //     description: `${product.name} (${selectedVariant.size} ${selectedVariant.color}) has been successfully added to your cart.`,
-    //     variant: "destructive",
-    //   });
+  
+      setOrders((prev) =>
+        prev.map((order) =>
+          order.id === editingOrder.id ? editingOrder : order
+        )
+      );
+  
+      setEditingOrder(null);
+    } catch (error) {
+      console.error("Failed to update order:", error);
     }
-
-    // navigate("/store/cart");
+  };
+  const handleExportCSV = () => {
+    if (orders.length === 0) return;
+  
+    const headers = [
+      "Order ID",
+      "Customer",
+      "Phone",
+      "Items",
+      "Total",
+      "Payment Method",
+      "Payment Status",
+      "Delivery Status"
+    ];
+  
+    const rows = orders.map(order => {
+      const itemsString = order.items.map((item: any) => `${item.name} x${item.quantity}`).join(", ");
+      return [
+        order.orderId,
+        `${order.customer.firstName} ${order.customer.lastName}`,
+        order.customer.phone,
+        itemsString,
+        `R${order.total.toFixed(2)}`,
+        order.paymentMethod,
+        order.paymentStatus,
+        order.deliveryStatus
+      ];
+    });
+  
+    const csvContent = [headers, ...rows]
+      .map(e => e.map(field => `"${String(field).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+  
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "orders.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+  
+ 
+  
+  const filteredOrders = orders.filter(order => {
+    // Compose a string for customer name
+    const customerName = `${order.customer.firstName} ${order.customer.lastName}`.toLowerCase();
+    
+    const matchesSearch = customerName.includes(searchTerm.toLowerCase()) ||
+                         order.id.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === "all" || order.paymentStatus.toLowerCase() === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+  
+  // const getStatusBadgeVariant = (status: string) => {
+  //   switch (status.toLowerCase()) {
+  //     case "paid":
+  //       return "default";
+  //     case "pending":
+  //       return "secondary";
+  //     case "failed":
+  //       return "destructive";
+  //     default:
+  //       return "secondary";
+  //   }
+  // };
+  const getStatusBadgeVariant = (status?: string) => {
+    if (!status) return "secondary"; // or some default variant
+  
+    switch (status.toLowerCase()) {
+      case "paid":
+        return "default";
+      case "pending":
+        return "secondary";
+      case "failed":
+        return "destructive";
+      default:
+        return "secondary";
+    }
+  };
+  const getDeliveryStatusBadgeVariant = (status?: string) => {
+    if (!status) return "secondary"; // default variant if status missing
+  
+    switch (status.toLowerCase()) {
+      case "delivered":
+        return "default";
+      case "not delivered":
+        return "destructive";
+      case "processing":
+        return "secondary";
+      default:
+        return "secondary";
+    }
   };
 
-  const updateQuantity = (change: number) => {
-    setQuantity((prev) => Math.max(1, prev + change));
-  };
-
-  const images: string[] = [
-    product?.productImage || "",
-    ...(selectedVariant?.images ? [selectedVariant.images] : []),
-    ...(product?.variants?.map((v) => v.images).filter(Boolean) || []),
-  ].filter(Boolean);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4 animate-pulse" />
-          <p className="text-lg">Loading product...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!product) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h2 className="text-2xl font-bold mb-2">Product Not Found</h2>
-          <p className="text-muted-foreground mb-4">
-            The product you're looking for doesn't exist.
-          </p>
-          <Button asChild>
-            <Link to="/store">Back to Store</Link>
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
+  const pendingOrders = orders.filter(order => order.paymentStatus === "Pending").length;
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="border-b bg-white sticky top-0 z-50">
+      <div className="border-b bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-          <Button variant="ghost" onClick={() => navigate(-1)}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
-            {/* <div className="flex items-center space-x-4" >
-              <Store className="h-8 w-8 text-primary" />
-              <h1 className="text-2xl font-bold text-foreground">Your Store</h1>
-            </div> */}
             <div className="flex items-center space-x-4">
-              {/* <Button variant="outline" asChild>
-                <Link to="/admin">Admin Panel</Link>
-              </Button> */}
-              {/* <Button asChild className="relative">
-                <Link to="/store/cart">
-                  <ShoppingCart className="h-4 w-4 mr-2" />
-                  Cart
-                  {itemCount > 0 && (
-                    <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center text-xs">
-                      {itemCount}
-                    </Badge>
-                  )}
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/admin">
+                  <ArrowLeft className="h-4 w-4" />
                 </Link>
-              </Button> */}
+              </Button>
+              <ShoppingCart className="h-8 w-8 text-primary" />
+              <h1 className="text-2xl font-bold text-foreground">Order Management</h1>
+            </div>
+            <div className="flex items-center space-x-4">
+              <Button variant="outline"  onClick={handleExportCSV}>
+                <Download className="h-4 w-4 mr-2" />
+                Export CSV
+              </Button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Product Details */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Product Images */}
-          <div className="space-y-4">
-            <div className="aspect-square bg-muted rounded-lg overflow-hidden">
-              {images.length > 0 ? (
-                <img
-                  src={images[selectedImage]}
-                  alt={product.name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-                  <Store className="h-24 w-24 text-primary/50" />
-                </div>
-              )}
-            </div>
-
-            {images.length > 1 && (
-              <div className="flex space-x-2 overflow-x-auto">
-                {images.map((img, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setSelectedImage(i)}
-                    className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 ${
-                      selectedImage === i ? "border-primary" : "border-transparent"
-                    }`}
-                  >
-                    <img
-                      src={img}
-                      alt={`${product.name} ${i + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Product Info */}
-          <div className="space-y-6">
-            <div>
-              <Badge variant="secondary" className="mb-2">
-                {product.category}
-              </Badge>
-              <h1 className="text-3xl font-bold mb-2">{product.name}</h1>
-              {/* <div className="flex items-center space-x-2 mb-4">
-                <div className="flex items-center">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className="h-4 w-4 fill-yellow-400 text-yellow-400"
-                    />
-                  ))}
-                </div>
-                <span className="text-sm text-muted-foreground">(4.8) • 124 reviews</span>
-              </div> */}
-              <div className="text-3xl font-bold text-primary mb-4">
-                R{selectedVariant?.sellingPrice || product.price || 0}
-              </div>
-            </div>
-
-            {/* Variant Selection */}
-            {product.variants && product.variants.length > 0 && (
-  <>
-    {/* Color Dropdown */}
-    <div className="mb-4">
-      <label className="text-sm font-medium mb-2 block">Select Color:</label>
-      <Select
-        value={selectedVariant?.color || ""}
-        onValueChange={(color) => {
-          const variant = product.variants.find((v) => v.color === color);
-          setSelectedVariant(variant || null);
-          setSelectedImage(0);
-        }}
-      >
-        <SelectTrigger>
-          <SelectValue placeholder="Choose a color" />
-        </SelectTrigger>
-        <SelectContent>
-          {[...new Set(product.variants.map((v) => v.color))].map((color) => (
-            <SelectItem key={color} value={color}>
-              {color}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
-
-    {/* Size Dropdown */}
-    {selectedVariant?.color && (
-      <div className="mb-4">
-        <label className="text-sm font-medium mb-2 block">Select Size:</label>
-        <Select
-          value={selectedVariant.size || ""}
-          onValueChange={(size) => {
-            const variant = product.variants.find(
-              (v) => v.color === selectedVariant.color && v.size === size
-            );
-            setSelectedVariant(variant || selectedVariant);
-          }}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Choose a size" />
-          </SelectTrigger>
-          
-          <SelectContent>
-            {[...new Set(product.variants
-              .filter((v) => v.color === selectedVariant.color)
-              .map((v) => v.size)
-            )].map((size) => (
-              <SelectItem key={size} value={size}>
-                {size}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-    )}
-  </>
-)}
-
-
-            {/* Quantity Controls */}
-            <div className="flex items-center space-x-4 mb-6">
-              <Button variant="outline" onClick={() => updateQuantity(-1)}>
-                <Minus />
-              </Button>
-              <span className="text-xl font-medium">{quantity}</span>
-              <Button variant="outline" onClick={() => updateQuantity(1)}>
-                <Plus />
-              </Button>
-            </div>
-
-            {/* Add to Cart Button */}
-            <Button
-              size="lg"
-              className="w-full flex items-center justify-center space-x-2"
-              onClick={handleAddToCart}
-            >
-              <ShoppingCart />
-              <span>Add to Cart</span>
-            </Button>
-
-            {/* Additional Info */}
-            {/* <div className="grid grid-cols-2 gap-4 mt-8 text-muted-foreground">
-              <div className="flex items-center space-x-2">
-                <Package />
-                <span>Fast shipping on all orders</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Shield />
-                <span>Secure payment and buyer protection</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Truck />
-                <span>Reliable delivery services</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Store />
-                <span>Trusted store with quality products</span>
-              </div>
-            </div> */}
-          </div>
+        {/* Stats Bar */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+       
+       
+       
+       
+       
+       
+       
+       
+       
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold">{orders.length}</div>
+              <div className="text-sm text-muted-foreground">Total Orders</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-secondary">{pendingOrders}</div>
+              <div className="text-sm text-muted-foreground">Pending Orders</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold">R{totalRevenue.toFixed(2)}</div>
+              <div className="text-sm text-muted-foreground">Total Revenue</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold">R{(totalRevenue / orders.length).toFixed(2)}</div>
+              <div className="text-sm text-muted-foreground">Average Order</div>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Product Description */}
-        {product.description && (
-          <Card className="mt-12">
-            <CardHeader>
-              <h2 className="text-xl font-semibold">Product Details</h2>
-            </CardHeader>
-            <CardContent>
-              <p>{product.description}</p>
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search orders or customers..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full sm:w-48">
+              <Filter className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="paid">Paid</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="failed">Failed</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Orders Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Orders</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Order ID</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Items</TableHead>
+                  <TableHead>Total</TableHead>
+                  <TableHead>Payment</TableHead>
+                  <TableHead>Status</TableHead>
+                  {/* <TableHead>Date</TableHead> */}
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredOrders.map((order) => (
+                  <TableRow key={order.id}>
+                    <TableCell className="font-medium">{order.orderId}</TableCell>
+                    <TableCell>
+                      <div>
+                        {/* <div className="font-medium">{order.customer}</div>
+                        <div className="text-sm text-muted-foreground">{order.phone}</div> */}
+                        <div className="font-medium">
+                        {order.customer.firstName} {order.customer.lastName}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {order.customer.phone}
+                      </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        {order.items.map((item, index) => (
+                          <div key={index}>
+                            {item.name} x{item.quantity}
+                          </div>
+                        ))}
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-medium">R{order.total.toFixed(2)}</TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        <div>{order.paymentMethod}</div>
+                        <Badge variant={getStatusBadgeVariant(order.paymentStatus)} className="mt-1">
+                          {order.paymentStatus}
+                        </Badge>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {order.deliveryStatus && (
+                      <Badge variant={getDeliveryStatusBadgeVariant(order.deliveryStatus)}>
+                        {order.deliveryStatus}
+                      </Badge>
+                    )}
+                    </TableCell>
+                    {/* <TableCell className="text-sm">
+                      <div>{order.orderDate}</div>
+                      {order.deliveryDate && (
+                        <div className="text-muted-foreground">Delivered: {order.deliveryDate}</div>
+                      )}
+                    </TableCell> */}
+                    <TableCell>
+                      <div className="flex space-x-2">
+                      <Button variant="outline" size="sm" onClick={() => handleEdit(order)}>
+                        Edit
+                      </Button>
+                        <Button variant="outline" size="sm" asChild>
+                          <Link to={`/admin/invoice/${order.id}`}>
+                            <FileText className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            <Dialog open={!!editingOrder} onOpenChange={(open) => !open && setEditingOrder(null)}>
+              <DialogContent className="sm:max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Edit Order #{editingOrder?.orderId}</DialogTitle>
+                </DialogHeader>
+                {editingOrder && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-4">
+                    <Input
+                      value={editingOrder.paymentMethod}
+                      onChange={(e) =>
+                        setEditingOrder({ ...editingOrder, paymentMethod: e.target.value })
+                      }
+                      placeholder="Payment Method"
+                    />
+                   <Select
+                    value={editingOrder.paymentStatus}
+                    onValueChange={(val) =>
+                      setEditingOrder({ ...editingOrder, paymentStatus: val })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Payment Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Paid">Paid</SelectItem>
+                      <SelectItem value="Pending">Pending</SelectItem>
+                      <SelectItem value="Failed">Failed</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select
+                    value={editingOrder.deliveryStatus}
+                    onValueChange={(val) =>
+                      setEditingOrder({ ...editingOrder, deliveryStatus: val })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Delivery Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Delivered">Delivered</SelectItem>
+                      <SelectItem value="Not Delivered">Not Delivered</SelectItem>
+                      <SelectItem value="Processing">Processing</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  </div>
+                )}
+                <DialogFooter className="flex gap-2">
+                  <Button onClick={handleSaveChanges}>Save Changes</Button>
+                  <Button variant="outline" onClick={() => setEditingOrder(null)}>
+                    Cancel
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+
+          </CardContent>
+        </Card>
+
+        {filteredOrders.length === 0 && (
+          <Card className="py-12 mt-6">
+            <CardContent className="text-center">
+              <ShoppingCart className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No orders found</h3>
+              <p className="text-muted-foreground">
+                {searchTerm || statusFilter !== "all" 
+                  ? "Try adjusting your search or filter criteria"
+                  : "Orders will appear here once customers start purchasing"
+                }
+              </p>
             </CardContent>
           </Card>
         )}
@@ -397,4 +444,4 @@ console.log(fetchProduct)
   );
 };
 
-export default ProductDetailsPage;
+export default AdminOrders;

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, Link ,useNavigate} from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,7 +7,6 @@ import { ArrowLeft, ShoppingCart, Minus, Plus } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/firebase";
-import { doc, getDoc } from "firebase/firestore";
 
 interface Product {
   id: string;
@@ -37,83 +36,45 @@ type Variant = {
 
 const ProductDetailsPage = () => {
   const { id } = useParams();
-  const navigate = useNavigate();
-  // const { addItem } = useCart();
-  const { addItem , itemCount} = useCart();
-
+  const { addItem } = useCart();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [selectedVariant, setSelectedVariant] = useState<string | null>(null);
-  const [selectedImage, setSelectedImage] = useState(0);
+console.log(id)
+console.log(product)
 
-  
-
-  // useEffect(() => {
-  //   const fetchProduct = async () => {
-  //     if (!id) return;
-
-  //     try {
-  //       const q = query(
-  //         collection(db, "products"),
-  //         where("id", "==", parseInt(id))
-  //       );
-  //       const querySnapshot = await getDocs(q);
-        
-  //       if (!querySnapshot.empty) {
-  //         const doc = querySnapshot.docs[0];
-  //         const productData = { id: doc.id, ...doc.data() } as Product;
-  //         setProduct(productData);
-  //         console.log(productData)
-  //         // Set default variant if available
-  //         if (productData.variants && productData.variants.length > 0) {
-  //           setSelectedVariant(productData.variants[0].id);
-  //         }
-  //       }
-  //     } catch (error) {
-  //       console.error("Error fetching product:", error);
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
-
-  //   fetchProduct();
-  // }, [id]);
   useEffect(() => {
+    const fetchProduct = async () => {
+      if (!id) return;
+
+      try {
+        const q = query(
+          collection(db, "products"),
+          where("id", "==", parseInt(id))
+        );
+        const querySnapshot = await getDocs(q);
+        
+        if (!querySnapshot.empty) {
+          const doc = querySnapshot.docs[0];
+          const productData = { id: doc.id, ...doc.data() } as Product;
+          setProduct(productData);
+          console.log(productData)
+          // Set default variant if available
+          if (productData.variants && productData.variants.length > 0) {
+            setSelectedVariant(productData.variants[0].id);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching product:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchProduct();
   }, [id]);
-  const fetchProduct = async () => {
-    if (!id) return;
 
-    setLoading(true);
-    try {
-      const docRef = doc(db, "products", id);
-      const docSnap = await getDoc(docRef);
-
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        const fetchedProduct: Product = {
-          id: docSnap.id,
-          ...(data as Product),
-        };
-        setProduct(fetchedProduct);
-console.log(fetchProduct)
-        // if (fetchedProduct.variants && fetchedProduct.variants.length > 0) {
-        //   setSelectedVariant(fetchedProduct.variants[0]);
-        // }
-      } else {
-        // Fallback mock data if no product found
-        if (id === "67") {
-        
-          console.warn(`No product found with ID: ${id}`);
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching product:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
   const handleAddToCart = () => {
     if (!product) return;
 
@@ -236,13 +197,16 @@ console.log(fetchProduct)
               <h1 className="text-3xl font-bold text-foreground">{product.name}</h1>
               <div className="flex items-center space-x-2 mt-2">
                 <Badge variant="secondary">{product.category}</Badge>
-                <Badge variant="default">In Stock ({getMaxStock()})</Badge>
-
+                {isInStock ? (
+                  <Badge variant="default">In Stock ({getMaxStock()})</Badge>
+                ) : (
+                  <Badge variant="destructive">Out of Stock</Badge>
+                )}
               </div>
             </div>
 
             <div className="text-3xl font-bold text-primary">
-              R{getCurrentPrice()}
+              R{getCurrentPrice().toFixed(2)}
             </div>
 
             {/* Variants */}
@@ -258,7 +222,7 @@ console.log(fetchProduct)
                       className="h-auto p-3 flex flex-col items-start"
                     >
                       <span className="font-medium">{variant.name}</span>
-                      <span className="text-sm">R{variant.price}</span>
+                      <span className="text-sm">R{variant.price.toFixed(2)}</span>
                       <span className="text-xs opacity-70">Stock: {variant.stock}</span>
                     </Button>
                   ))}
@@ -301,13 +265,12 @@ console.log(fetchProduct)
 
               <Button
                 onClick={handleAddToCart}
-                // disabled={!isInStock}
+                disabled={!isInStock}
                 className="w-full"
                 size="lg"
               >
                 <ShoppingCart className="h-4 w-4 mr-2" />
-                Add to Cart
-                {/* {isInStock ? `Add to Cart - R${(getCurrentPrice() * quantity)}` : "Out of Stock"} */}
+                {isInStock ? `Add to Cart - R${(getCurrentPrice() * quantity).toFixed(2)}` : "Out of Stock"}
               </Button>
             </div>
           </div>

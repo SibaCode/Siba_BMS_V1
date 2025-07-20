@@ -1,189 +1,266 @@
+import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { useEffect, useState } from "react";
+import { ArrowLeft, Printer, Download, FileText } from "lucide-react";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/firebase";
-import { 
-  ArrowLeft, 
-  Printer, 
-  Download, 
-  FileText
-} from "lucide-react";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+import { useBusinessInfo } from "@/pages/components/BusinessInfoContext";
+import { collection, getDocs } from "firebase/firestore";
+
+interface InvoiceItem {
+  name: string;
+  quantity: number;
+  price: number;
+  total: number;
+}
+
+interface CustomerInfo {
+  id: string;
+  name: string;
+  address: string;
+  phone: string;
+  email: string;
+  firstName:string;
+  createdAt:string;
+
+}
+
+interface InvoiceData {
+  orderId: string;
+  invoiceNumber: string;
+  orderDate: string;
+  dueDate: string;
+  customer: CustomerInfo;
+  items: InvoiceItem[];
+  subtotal: number;
+  total: number;
+  paymentMethod: string;
+  paymentStatus: string;
+  createdAt:string;
+  deliveryStatus:string;
+
+}
 
 const AdminInvoice = () => {
-  const { orderId } = useParams();
+  const { id } = useParams();
+  const [invoice, setInvoice] = useState<InvoiceData | null>(null);
+  const [loading, setLoading] = useState(true);
+console.log(invoice)
+// const { businessInfo } = useBusinessInfo();
+  // const [businessInfo, setBusinessInfo] = useState([]);
+  const [businessInfo, setBusinessInfo] = useState<any[]>([]);
+  console.log(businessInfo)
 
-  const [invoice, setInvoice] = useState<any>(null);
-  const [businessInfo, setBusinessInfo] = useState<any>(null);
+  // Helper to safely format currency numbers
+  const formatCurrency = (num?: number) =>
+    typeof num === "number" ? num.toFixed(2) : "0.00";
+
+  // Ref for the invoice DOM element we want to export
+  const invoiceRef = document.getElementById("invoice-content");
+
+
+  const handleDownload = () => {
+    const input = document.getElementById("invoice-content");
+    if (!input) return;
+
+    html2canvas(input, { scale: 2 }).then((canvas) => {
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+
+      // A4 size in mm: 210 x 297
+      const pdfWidth = 210;
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`Invoice-${invoice?.orderId || "unknown"}.pdf`);
+    });
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const businessRef = doc(db, "businessInfo", "main");
-        const businessSnap = await getDoc(businessRef);
-        if (businessSnap.exists()) {
-          setBusinessInfo(businessSnap.data());
-        }
+    const fetchInvoice = async () => {
+      if (!id) return;
 
-        const orderRef = doc(db, "orders", orderId || "");
-        const orderSnap = await getDoc(orderRef);
-        if (orderSnap.exists()) {
-          setInvoice(orderSnap.data());
+      try {
+        const docRef = doc(db, "orders", id);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+          const data = docSnap.data() as InvoiceData;
+          setInvoice(data);
+          console.log(data)
         } else {
-          console.log("Order not found");
+          console.error("Invoice not found for orderId:", id);
         }
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error("Error fetching invoice:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchData();
-  }, [orderId]);
-
-  if (!invoice || !businessInfo) return <p className="p-4">Loading...</p>;
-
-  const handlePrint = () => {
-    window.print();
-  };
-
-  const handleDownload = () => {
-    // In real app, this would generate PDF
-    console.log("Downloading invoice...");
-  };
+    fetchInvoice();
+  }, [id]);
+  useEffect(() => {
+    async function fetchBusinessInfo() {
+      try {
+        const businessInfoCol = collection(db, "businessInfo");  
+        const businessInfoSnapshot = await getDocs(businessInfoCol);
+        const businessInfoList = businessInfoSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setBusinessInfo(businessInfoList);
+        console.log(businessInfoList)
+      } catch (error) {
+        console.error("Error fetching products:", error);
+      }
+    }
+    fetchBusinessInfo();
+  }, []);
+  if (loading) return <div className="text-center mt-20">Loading invoice...</div>;
+  if (!invoice) return <div className="text-center mt-20 text-red-500">Invoice not found.</div>;
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
+      {/* Top Bar */}
       <div className="border-b bg-white print:hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="sm" asChild>
-                <Link to="/admin/orders">
-                  <ArrowLeft className="h-4 w-4" />
-                </Link>
-              </Button>
-              <FileText className="h-8 w-8 text-primary" />
-              <h1 className="text-2xl font-bold text-foreground">Invoice #{invoice.invoiceNumber}</h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Button variant="outline" onClick={handleDownload}>
-                <Download className="h-4 w-4 mr-2" />
-                Download PDF
-              </Button>
-              <Button onClick={handlePrint}>
-                <Printer className="h-4 w-4 mr-2" />
-                Print
-              </Button>
-            </div>
+        <div className="max-w-7xl mx-auto px-4 flex justify-between items-center h-16">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/admin/orders">
+                <ArrowLeft className="h-4 w-4" />
+              </Link>
+            </Button>
+            <FileText className="h-6 w-6 text-primary" />
+            <h1 className="text-2xl font-bold">
+              Invoice #{invoice.orderId}
+            </h1>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleDownload}>
+              <Download className="h-4 w-4 mr-2" />
+              Download
+            </Button>
           </div>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Card className="print:shadow-none print:border-0">
+      {/* Invoice Content */}
+      
+      <div
+        id="invoice-content"
+        className="max-w-4xl mx-auto px-4 py-8 bg-white"
+        style={{ color: "#000" }} >
+          <div className="flex justify-center mb-6">
+        {businessInfo?.[0]?.logo ? (
+          <img
+            src={businessInfo?.[0]?.logo}
+            alt={`${businessInfo?.[0]?.name} Logo`}
+            className="h-20 object-contain"
+          />
+        ) : (
+          <div className="h-20 w-40 flex items-center justify-center bg-gray-200 text-gray-500 uppercase tracking-widest font-bold">
+            LOGO
+          </div>
+        )}
+      </div>
+
+        <Card>
           <CardContent className="p-8">
-            {/* Business Header */}
-            <div className="flex justify-between items-start mb-8">
+            {/* Header */}
+            <div className="flex justify-between mb-8">
               <div>
-                <h1 className="text-3xl font-bold text-primary mb-2">{businessInfo.name}</h1>
-                <div className="text-sm text-muted-foreground space-y-1">
-                  <p>{businessInfo.address}</p>
-                  <p>Tel: {businessInfo.phone}</p>
-                  <p>Email: {businessInfo.email}</p>
-                  <p>Tax No: {businessInfo.taxNumber}</p>
+                <h2 className="text-2xl font-bold text-primary">{businessInfo?.[0]?.name}</h2>
+                <div className="text-sm text-muted-foreground">
+                  <p>{businessInfo?.[0]?.address}</p>
+                  <p>{businessInfo?.[0]?.phone}</p>
+                  <p>{businessInfo?.[0]?.email}</p>
                 </div>
               </div>
-              <div className="text-right">
-                <h2 className="text-2xl font-bold mb-2">INVOICE</h2>
-                <div className="text-sm space-y-1">
-                  <p><span className="font-medium">Invoice #:</span> {invoice.invoiceNumber}</p>
-                  <p><span className="font-medium">Order #:</span> {invoice.id}</p>
-                  <p><span className="font-medium">Date:</span> {invoice.orderDate}</p>
-                  <p><span className="font-medium">Due Date:</span> {invoice.dueDate}</p>
-                </div>
+              <div className="text-right text-sm">
+                <p><strong>Invoice #:</strong> {invoice.orderId}</p>
+                <p><strong>Order Date:</strong> {invoice.createdAt || "N/A"}</p>
+                <p><strong>Due Date:</strong> {invoice.createdAt || "N/A"}</p>
               </div>
             </div>
 
             <Separator className="my-6" />
 
-            {/* Customer Info */}
+            {/* Customer */}
             <div className="mb-8">
-              <h3 className="text-lg font-semibold mb-4">Bill To:</h3>
-              <div className="bg-muted p-4 rounded-lg">
-                <h4 className="font-medium">{invoice.customer.name}</h4>
-                <p className="text-sm text-muted-foreground">{invoice.customer.address}</p>
-                <p className="text-sm text-muted-foreground">Tel: {invoice.customer.phone}</p>
-                <p className="text-sm text-muted-foreground">Email: {invoice.customer.email}</p>
+              <h3 className="font-semibold mb-2">Billed To:</h3>
+              <div className="bg-muted p-4 rounded">
+                <p className="font-medium">{invoice.customer?.firstName || "N/A"}</p>
+                <p className="text-sm text-muted-foreground">{invoice.customer?.address || "N/A"}</p>
+                <p className="text-sm">{invoice.customer?.phone || "N/A"}</p>
+                <p className="text-sm">{invoice.customer?.email || "N/A"}</p>
               </div>
             </div>
 
             {/* Items Table */}
             <div className="mb-8">
-              <h3 className="text-lg font-semibold mb-4">Items:</h3>
-              <div className="border rounded-lg overflow-hidden">
-                <table className="w-full">
-                  <thead className="bg-muted">
-                    <tr>
-                      <th className="text-left p-4">Description</th>
-                      <th className="text-center p-4">Quantity</th>
-                      <th className="text-right p-4">Unit Price</th>
-                      <th className="text-right p-4">Total</th>
+              <h3 className="font-semibold mb-4">Items</h3>
+              <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
+                <thead className="bg-muted">
+                  <tr>
+                    <th className="text-left p-2 border">Item</th>
+                    <th className="text-center p-2 border">Qty</th>
+                    <th className="text-right p-2 border">Price</th>
+                    <th className="text-right p-2 border">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {invoice.items?.map((item, index) => (
+                    <tr key={index} className="border-t">
+                      <td className="p-2 border">{item.name}</td>
+                      <td className="text-center p-2 border">{item.quantity}</td>
+                      <td className="text-right p-2 border">R{formatCurrency(item.price)}</td>
+                      <td className="text-right p-2 border">R{formatCurrency(item.total)}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {invoice.items.map((item, index) => (
-                      <tr key={index} className="border-t">
-                        <td className="p-4">{item.name}</td>
-                        <td className="text-center p-4">{item.quantity}</td>
-                        <td className="text-right p-4">R{item.price}</td>
-                        <td className="text-right p-4">R{item.total}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                </tbody>
+              </table>
             </div>
 
             {/* Totals */}
-            <div className="flex justify-end mb-8">
+            <div className="flex justify-end mb-6">
               <div className="w-64 space-y-2">
                 <div className="flex justify-between">
                   <span>Subtotal:</span>
-                  <span>R{invoice.subtotal}</span>
+                  <span>R{formatCurrency(invoice.subtotal)}</span>
                 </div>
-                <Separator />
-                <div className="flex justify-between text-lg font-bold">
+                <div className="flex justify-between font-bold text-lg">
                   <span>Total:</span>
-                  <span>R{invoice.total}</span>
+                  <span>R{formatCurrency(invoice.total)}</span>
                 </div>
               </div>
             </div>
-
-            {/* Payment Info */}
-            <div className="mb-8">
-              <h3 className="text-lg font-semibold mb-4">Payment Information:</h3>
-              <div className="bg-muted p-4 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p><span className="font-medium">Payment Method:</span> {invoice.paymentMethod}</p>
-                    <p><span className="font-medium">Payment Status:</span> 
-                      <Badge variant={invoice.paymentStatus === "Paid" ? "default" : "secondary"} className="ml-2">
-                        {invoice.paymentStatus}
-                      </Badge>
-                    </p>
-                  </div>
-                </div>
-              </div>
+            <div className="mb-6">
+            <h3 className="font-semibold mb-2">Order status</h3>
+            <div className="bg-muted p-4 rounded text-sm space-y-1">
+              <p><strong>Payment Method:</strong> {invoice.paymentMethod || "N/A"}</p>
+              <p><strong>Delivery Status:</strong> {invoice.deliveryStatus || "N/A"}</p>
             </div>
+          </div>
+            <div className="mb-6">
+            <h3 className="font-semibold mb-2">Bank Account Details</h3>
+            <div className="bg-muted p-4 rounded text-sm space-y-1">
+              <p><strong>Account Holder:</strong> {businessInfo?.[0]?.accountHolder || "N/A"}</p>
+              <p><strong>Bank:</strong> {businessInfo?.[0]?.bankName || "N/A"}</p>
+              <p><strong>Account Number:</strong> {businessInfo?.[0]?.accountNumber || "N/A"}</p>
+              <p><strong>Branch Code:</strong> {businessInfo?.[0]?.branchCode || "N/A"}</p>
+            </div>
+          </div>
 
             {/* Footer */}
             <div className="text-center text-sm text-muted-foreground border-t pt-4">
-              <p>Thank you for your business!</p>
-              <p>For any questions about this invoice, please contact us at {businessInfo.email}</p>
+              <p>Thanks for shopping with us!</p>
+              <p>Need help? Contact {businessInfo?.[0]?.email}</p>
             </div>
           </CardContent>
         </Card>

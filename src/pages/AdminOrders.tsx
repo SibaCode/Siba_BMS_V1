@@ -47,14 +47,15 @@ const AdminOrders = () => {
   }, []);
   
   const filteredOrders = orders.filter(order => {
-    const customerName = order.customerInfo?.name || order.customer || '';
-    const orderId = order.id || '';
-    const matchesSearch = customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         orderId.toLowerCase().includes(searchTerm.toLowerCase());
-    const paymentStatus = order.paymentStatus || '';
-    const matchesStatus = statusFilter === "all" || paymentStatus.toLowerCase() === statusFilter;
+    // Compose a string for customer name
+    const customerName = `${order.customer.firstName} ${order.customer.lastName}`.toLowerCase();
+    
+    const matchesSearch = customerName.includes(searchTerm.toLowerCase()) ||
+                         order.id.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === "all" || order.paymentStatus.toLowerCase() === statusFilter;
     return matchesSearch && matchesStatus;
   });
+  
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -217,11 +218,18 @@ const AdminOrders = () => {
                   <TableRow key={order.id}>
                     <TableCell className="font-medium">{order.id || 'N/A'}</TableCell>
                     <TableCell>
-                      <div>
-                        <div className="font-medium">{order.customerInfo?.name || order.customer || 'N/A'}</div>
-                        <div className="text-sm text-muted-foreground">{order.customerInfo?.phone || order.phone || 'N/A'}</div>
-                      </div>
-                    </TableCell>
+  <div>
+    <div className="font-medium">
+      {order.customerInfo?.name ||
+        `${order.customer?.firstName || ''} ${order.customer?.lastName || ''}`.trim() ||
+        'N/A'}
+    </div>
+    <div className="text-sm text-muted-foreground">
+      {order.customerInfo?.phone || order.customer?.phone || order.phone || 'N/A'}
+    </div>
+  </div>
+</TableCell>
+
                     <TableCell>
                       <div className="text-sm">
                         {(order.items || []).map((item, index) => (
