@@ -346,7 +346,7 @@ const paidOrders = orders.filter(o => o.paymentStatus?.toLowerCase() === "paid")
 const pendingPayments = orders.filter(o => o.paymentStatus?.toLowerCase() === "pending");
 const failedPayments = orders.filter(o => o.paymentStatus?.toLowerCase() === "failed");
 const processingPayments = orders.filter(o => o.paymentStatus?.toLowerCase() === "processing");
-
+console.log(paidOrders)
 const deliveredOrders = orders.filter(
   o =>
     o.deliveryStatus?.toLowerCase() === "delivered" ||
