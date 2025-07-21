@@ -103,9 +103,8 @@ const AdminDashboard = () => {
   const deliveredOrders = orderStatusData.find(item => item.status === 'Delivered')?.count || 0;
   const notDeliveredOrders = orderStatusData.find(item => item.status === 'Not Delivered')?.count || 0;
   const paidAmount = paymentStatusData.find(item => item.status === 'Paid')?.count || 0;
-  
   const [businessInfo, setBusinessInfo] = useState<any[]>([]);
-  console.log(businessInfo)
+
   useEffect(() => {
     async function fetchBusinessInfo() {
       try {
@@ -179,7 +178,6 @@ const AdminDashboard = () => {
   ];
 
   return (
-
     <motion.div 
       className="space-y-8"
       variants={containerVariants}
@@ -192,8 +190,8 @@ const AdminDashboard = () => {
         variants={cardVariants}
       >
         <div>
-          <h1 className="text-3xl font-bold text-gradient"> {businessInfo?.[0]?.name} , </h1>
-          <p className="text-muted-foreground">  Here's what's happening with your business.</p>
+          <h1 className="text-3xl font-bold text-gradient">{businessInfo?.[0]?.name} , </h1>
+          <p className="text-muted-foreground">Here's what's happening with your business.</p>
         </div>
         <div className="flex items-center gap-2">
           <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -207,37 +205,7 @@ const AdminDashboard = () => {
           </span>
         </div>
       </motion.div>
-    
-      {/* Quick Actions */}
-      <motion.div 
-        className="flex flex-wrap gap-3"
-        variants={cardVariants}
-      >
-        <Button asChild className="gradient-primary shadow-elegant">
-          <Link to="/admin/inventory" className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Add Product
-          </Link>
-        </Button>
-        <Button asChild variant="outline" className="card-hover">
-          <Link to="/admin/orders" className="flex items-center gap-2">
-            <Eye className="h-4 w-4" />
-            View Orders
-          </Link>
-        </Button>
-        <Button asChild variant="outline" className="card-hover">
-          <Link to="/store">
-            <ShoppingCart className="h-4 w-4 mr-2" />
-            View Store
-          </Link>
-        </Button>
-        <Button asChild variant="outline" className="card-hover">
-          <Link to="/admin/settings/business-info">
-            <Users className="h-4 w-4 mr-2" />
-            Business Info
-          </Link>
-        </Button>
-      </motion.div>
+
 
       {/* Stats Grid */}
       <motion.div 
