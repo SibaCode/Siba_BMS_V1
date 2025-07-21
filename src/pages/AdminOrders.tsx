@@ -138,7 +138,7 @@ const AdminOrders = () => {
 
           
           <Button asChild variant="destructive">
-              <Link to="/create-order">Create Order</Link>
+              <Link to="/admin/create-order">Create Order</Link>
             </Button>
             </div>
           </div>

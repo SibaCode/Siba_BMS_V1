@@ -23,6 +23,7 @@ import ShoppingCart from "./pages/ShoppingCart";
 import Checkout from "./pages/Checkout";
 import OrderSuccess from "./pages/OrderSuccess";
 import { AdminLayout } from "./components/AdminLayout";
+import CreateOrderForm from "./pages/components/CreateOrderForm";
 
 const queryClient = new QueryClient();
 
@@ -77,11 +78,11 @@ const App = () => (
                 <AdminExpensesPage />
               </AdminLayout>
             } />
-            {/* <Route path="/admin/create-order" element={
+             <Route path="/admin/create-order" element={
               <AdminLayout title="Expense Management">
-                <AdminExpensesPage />
+                <CreateOrderForm />
               </AdminLayout>
-            } /> */}
+            } /> 
             
             {/* Public store routes */}
             <Route path="/storefront" element={<StorefrontPage />} />
