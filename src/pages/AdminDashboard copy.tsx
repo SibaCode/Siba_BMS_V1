@@ -76,11 +76,9 @@ const AdminDashboard = () => {
   const [orders, setOrders] = useState<any[]>([]);
   const { customers } = CustomerOverview();
 
-  // When you fetch your customers data, update the state
-  // For example:
-  // setCustomers(fetchedCustomers);
+
   
-  <CustomerOverview customers={customers} />
+  // <CustomerOverview customers={customers} />
   
 console.log(products)
   useEffect(() => {
@@ -263,7 +261,7 @@ const totalRevenue = paidOrders.reduce((sum, order) => sum + (order.total || 0),
 },
 {
   title: "Payment Summary",
-  value: `${orders.length} orders`,
+  value: `${paidOrders} invoices`,
   description: (
     <ul className="text-sm space-y-1">
       <li className="text-yellow-600">Pending → {pendingPayments.length}</li>

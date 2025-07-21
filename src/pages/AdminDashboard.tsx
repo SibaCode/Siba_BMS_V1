@@ -29,6 +29,8 @@ import {
   Truck
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
+import { InventoryOverview } from "@/pages/components/InventoryOverview";
+import RecentOrders from "./components/RecentOrders";
 
 // Mock data for enhanced dashboard
 const stockOverviewData = [
@@ -90,9 +92,28 @@ const cardVariants = {
   }
 };
 
+// Mock data for charts
+const salesData = [
+  { name: 'Jan', sales: 4000, revenue: 24000 },
+  { name: 'Feb', sales: 3000, revenue: 18000 },
+  { name: 'Mar', sales: 5000, revenue: 30000 },
+  { name: 'Apr', sales: 4500, revenue: 27000 },
+  { name: 'May', sales: 6000, revenue: 36000 },
+  { name: 'Jun', sales: 5500, revenue: 33000 },
+];
+
+const inventoryData = [
+  { category: 'Apparel', stock: 45, lowStock: 3 },
+  { category: 'Drinkware', stock: 23, lowStock: 2 },
+  { category: 'Kitchen', stock: 18, lowStock: 1 },
+  { category: 'Accessories', stock: 32, lowStock: 0 },
+];
+
+
+
 const AdminDashboard = () => {
   const [totalProducts, setTotalProducts] = useState(0);
-  const [totalOrders, setTotalOrders] = useState(0);
+  // const [totalOrders, setTotalOrders] = useState(0);
   const [totalCustomers, setTotalCustomers] = useState(0);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -100,8 +121,8 @@ const AdminDashboard = () => {
   // Calculate dynamic stats
   const lowStockCategories = stockOverviewData.filter(item => item.isLowStock).length;
   const totalStockItems = stockOverviewData.reduce((sum, item) => sum + item.units, 0);
-  const deliveredOrders = orderStatusData.find(item => item.status === 'Delivered')?.count || 0;
-  const notDeliveredOrders = orderStatusData.find(item => item.status === 'Not Delivered')?.count || 0;
+  // const deliveredOrders = orderStatusData.find(item => item.status === 'Delivered')?.count || 0;
+  // const notDeliveredOrders = orderStatusData.find(item => item.status === 'Not Delivered')?.count || 0;
   const paidAmount = paymentStatusData.find(item => item.status === 'Paid')?.count || 0;
   const [businessInfo, setBusinessInfo] = useState<any[]>([]);
 
@@ -122,15 +143,105 @@ const AdminDashboard = () => {
     }
     fetchBusinessInfo();
   }, []);
+  // useEffect(() => {
+  //   const fetchStats = async () => {
+  //     try {
+  //       const productsSnapshot = await getDocs(collection(db, "products"));
+  //       const ordersSnapshot = await getDocs(collection(db, "orders"));
+  //       const customersSnapshot = await getDocs(collection(db, "customers"));
+
+  //       setTotalProducts(productsSnapshot.size);
+  //       setTotalOrders(ordersSnapshot.size);
+  //       setTotalCustomers(customersSnapshot.size);
+  //     } catch (err) {
+  //       console.error("Error fetching stats", err);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   fetchStats();
+  // }, []);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  const [todaySales] = useState(850);
+  const [monthlyRevenue] = useState(12340);
+  const [products, setProducts] = useState<any[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<any[]>([]);
+  // const { customers } = CustomerOverview();
+
+
+  
+  // <CustomerOverview customers={customers} />
+  
+console.log(products)
   useEffect(() => {
     const fetchStats = async () => {
       try {
         const productsSnapshot = await getDocs(collection(db, "products"));
         const ordersSnapshot = await getDocs(collection(db, "orders"));
         const customersSnapshot = await getDocs(collection(db, "customers"));
+        console.log(productsSnapshot)
 
         setTotalProducts(productsSnapshot.size);
-        setTotalOrders(ordersSnapshot.size);
+        // setTotalOrders(ordersSnapshot.size);
         setTotalCustomers(customersSnapshot.size);
       } catch (err) {
         console.error("Error fetching stats", err);
@@ -141,35 +252,221 @@ const AdminDashboard = () => {
 
     fetchStats();
   }, []);
+ ;
+
+  const fetchProducts = async () => {
+    setLoading(true);
+    try {
+      const querySnapshot = await getDocs(collection(db, "products"));
+      const items = querySnapshot.docs.map(doc => ({
+      docId: doc.id,   // "apron", "mug", etc.
+      ...doc.data()
+    }));
+      console.log(items)
+      setProducts(items);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  const fetchOrders = async () => {
+    setLoading(true);
+    try {
+      const querySnapshot = await getDocs(collection(db, "orders"));
+      const items = querySnapshot.docs.map(doc => ({
+        docId: doc.id,
+        ...doc.data(),
+      }));
+      console.log("Orders:", items);
+      setOrders(items);
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  const fetchCustomers = async () => {
+    setLoading(true);
+    try {
+      const querySnapshot = await getDocs(collection(db, "customers"));
+      const items = querySnapshot.docs.map(doc => ({
+        docId: doc.id,
+        ...doc.data(),
+      }));
+      console.log("Customers:", items);
+      setCustomers(items);
+    } catch (error) {
+      console.error("Error fetching customers:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    fetchProducts();
+    fetchOrders();
+    fetchCustomers();
+  }, [])
+// Threshold for low stock alert per category
+const lowStockThreshold = 10;
+
+// Aggregate stock by category (object)
+const categoryStock = products.reduce((acc, product) => {
+  const totalStockForProduct = product.variants.reduce(
+    (sum, variant) => sum + (variant.stockQuantity || 0),
+    0
+  );
+  if (acc[product.category]) {
+    acc[product.category] += totalStockForProduct;
+  } else {
+    acc[product.category] = totalStockForProduct;
+  }
+  return acc;
+}, {} as Record<string, number>);
+
+// Convert to array and add isLow flag
+const categoryStockSummary = Object.entries(categoryStock).map(
+  ([category, totalStock]: [string, number]) => ({
+    category,
+    totalStock,
+    isLow: totalStock < lowStockThreshold,
+  })
+);
+const totalStock = categoryStockSummary.reduce(
+  (sum, { totalStock }) => sum + totalStock,
+  0
+);
+const lowStockCount = categoryStockSummary.filter(c => c.isLow).length;
+const totalOrders = orders.length;
+
+const paidOrders = orders.filter(o => o.paymentStatus?.toLowerCase() === "paid");
+const pendingPayments = orders.filter(o => o.paymentStatus?.toLowerCase() === "pending");
+const failedPayments = orders.filter(o => o.paymentStatus?.toLowerCase() === "failed");
+const processingPayments = orders.filter(o => o.paymentStatus?.toLowerCase() === "processing");
+
+const deliveredOrders = orders.filter(
+  o =>
+    o.deliveryStatus?.toLowerCase() === "delivered" ||
+    o.status?.toLowerCase() === "delivered"
+);
+const notDeliveredOrders = orders.length - deliveredOrders.length;
+
+const totalRevenue = paidOrders.reduce((sum, order) => sum + (order.total || 0), 0);
+
+
+const newCustomers = customers.length
+  // Flatten variants for the table
+  const flattenedVariants = products.flatMap((product) =>
+    product.variants.map((variant) => ({
+      docId: product.docId,
+      name: product.name,
+      category: product.category,
+      variantType: variant.type,
+      size: variant.size,
+      color: variant.color,
+      stockQuantity: variant.stockQuantity,
+      sellingPrice: variant.sellingPrice,
+      productImage: product.productImage,
+      status: variant.stockQuantity <= 5 ? "Low Stock" : product.status,
+    }))
+  );
+
+  // Filter based on search input (checks name, category, variantType, color, size)
+  const filteredVariants = flattenedVariants.filter((item) =>
+    [
+      item.name,
+      item.category,
+      item.variantType,
+      item.color,
+      item.size,
+    ]
+      .join(" ")
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase())
+  );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   const statsCards = [
     {
       title: "Total Stock Items",
-      value: loading ? "..." : totalStockItems,
-      description: "Units in inventory",
+      // value:`${totalStock}units,
+      value: `${totalStock} units`,
+      description: "of inventory",
       icon: Package,
       color: "from-blue-500 to-blue-600",
-      change: `${lowStockCategories} categories low`
+      // change: `${lowStockCategories} categories low`
     },
     {
-      title: "Orders Delivered",
-      value: loading ? "..." : deliveredOrders,
-      description: "Successfully completed",
+      title: "Total orders",
+      value: `${orders.length} order `,
+      description: "received",
       icon: CheckCircle,
       color: "from-green-500 to-emerald-600",
-      change: `${notDeliveredOrders} pending delivery`
+      // change: `${notDeliveredOrders} pending delivery`,
+      // title: "Order Summary",
+      // value: `${orders.length} orders`,
+      // description: (
+      //   <ul className="text-sm space-y-1">
+      //     <li className="text-green-600">Delivered → {deliveredOrders.length}</li>
+      //     <li className="text-gray-700">Not Delivered → {notDeliveredOrders}</li>
+      //   </ul>
+      // ),
+      // icon: Truck,
+      // color: "from-gray-500 to-gray-600",
+      // change: notDeliveredOrders > 0
+      //   ? `${notDeliveredOrders} pending`
+      //   : "All delivered",
+      // changeColor: notDeliveredOrders > 0 ? "text-yellow-600" : "text-green-600"
     },
     {
-      title: "Payment Status",
-      value: loading ? "..." : paidAmount,
-      description: "Successful payments",
-      icon: CreditCard,
-      color: "from-purple-500 to-pink-600",
-      change: "Latest transactions"
+      title: "Payment Summary",
+  value: `${paidOrders} paid`,
+  description: (
+    <ul className="text-sm space-y-1">
+      {/* <li className="text-yellow-600">Pending → {pendingPayments.length}</li> */}
+      <li className="text-red-600">Failed → {failedPayments.length}</li>
+      <li className="text-blue-600">Processing → {processingPayments.length}</li>
+    </ul>
+  ),
+  icon: CreditCard,
+  color: "from-yellow-500 to-yellow-600",
+  change: pendingPayments.length > 0
+    ? `${pendingPayments.length} processing`
+    : "No pending payments",
+  changeColor: pendingPayments.length > 0 ? "text-yellow-600" : "text-green-600"
     },
     {
       title: "New Customers",
-      value: loading ? "..." : recentCustomers.length,
+      value: loading ? "..." : newCustomers,
       description: "Recently joined",
       icon: UserPlus,
       color: "from-amber-500 to-orange-600",
@@ -232,116 +529,9 @@ const AdminDashboard = () => {
         ))}
       </motion.div>
 
-      {/* Stock Overview & Order Summary */}
-      <motion.div 
-        className="grid grid-cols-1 lg:grid-cols-2 gap-6"
-        variants={containerVariants}
-      >
-        <motion.div variants={cardVariants}>
-          <Card className="card-hover shadow-elegant">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Package className="h-5 w-5 text-primary" />
-                Stock Overview
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {stockOverviewData.map((item, index) => (
-                  <motion.div 
-                    key={item.category}
-                    className="flex justify-between items-center p-4 rounded-lg bg-gradient-to-r from-card to-secondary/20 border transition-smooth hover:shadow-md"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-3 h-3 rounded-full ${item.isLowStock ? 'bg-red-500' : 'bg-green-500'}`} />
-                      <span className="font-medium">{item.category}</span>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-lg font-bold">{item.units} units</div>
-                      {item.isLowStock && (
-                        <Badge variant="destructive" className="text-xs">Low Stock</Badge>
-                      )}
-                    </div>
-                  </motion.div>
-                ))}
-                <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                  <div className="flex items-center gap-2 text-amber-800">
-                    <AlertTriangle className="h-4 w-4" />
-                    <span className="text-sm font-medium">{lowStockCategories} categories low in stock</span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+      <InventoryOverview />
 
-        <motion.div variants={cardVariants}>
-          <Card className="card-hover shadow-elegant">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Truck className="h-5 w-5 text-primary" />
-                Order & Payment Summary
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                {/* Order Status */}
-                <div>
-                  <h4 className="font-medium mb-3 flex items-center gap-2">
-                    <ShoppingCart className="h-4 w-4" />
-                    Order Status
-                  </h4>
-                  <div className="grid grid-cols-2 gap-3">
-                    {orderStatusData.map((item, index) => (
-                      <motion.div 
-                        key={item.status}
-                        className="p-3 rounded-lg border bg-gradient-to-r from-card to-secondary/10"
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: index * 0.1 }}
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          {item.status === 'Delivered' ? 
-                            <CheckCircle className="h-4 w-4 text-green-500" /> : 
-                            <Clock className="h-4 w-4 text-amber-500" />
-                          }
-                          <span className="text-sm font-medium">{item.status}</span>
-                        </div>
-                        <div className="text-2xl font-bold" style={{ color: item.color }}>{item.count}</div>
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Payment Status */}
-                <div>
-                  <h4 className="font-medium mb-3 flex items-center gap-2">
-                    <CreditCard className="h-4 w-4" />
-                    Payment Status
-                  </h4>
-                  <div className="grid grid-cols-3 gap-2">
-                    {paymentStatusData.map((item, index) => (
-                      <motion.div 
-                        key={item.status}
-                        className="p-3 rounded-lg border bg-gradient-to-r from-card to-secondary/10 text-center"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                      >
-                        <div className="text-lg font-bold" style={{ color: item.color }}>{item.count}</div>
-                        <div className="text-xs text-muted-foreground">{item.status}</div>
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </motion.div>
+      {/* <RecentOrders /> */}
 
       {/* Recent Customers & Recent Orders */}
       <motion.div 
@@ -391,51 +581,7 @@ const AdminDashboard = () => {
           </Card>
         </motion.div>
 
-        <motion.div variants={cardVariants}>
-          <Card className="card-hover shadow-elegant">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <ShoppingCart className="h-5 w-5 text-green-500" />
-                <span>Recent Orders</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {recentOrders.map((order, index) => (
-                  <motion.div 
-                    key={order.id}
-                    className="flex justify-between items-center p-4 rounded-lg bg-gradient-to-r from-card to-secondary/20 border transition-smooth hover:shadow-md"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                        {order.status === 'delivered' ? 
-                          <CheckCircle className="h-5 w-5 text-green-600" /> :
-                          <Clock className="h-5 w-5 text-amber-600" />
-                        }
-                      </div>
-                      <div>
-                        <div className="font-medium">{order.id}</div>
-                        <div className="text-sm text-muted-foreground">{order.customer}</div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-semibold">R{order.amount}</div>
-                      <div className="text-xs text-muted-foreground">{order.time}</div>
-                    </div>
-                  </motion.div>
-                ))}
-                <Button asChild variant="outline" size="sm" className="w-full mt-3 card-hover">
-                  <Link to="/admin/orders">
-                    View All Orders
-                  </Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+        <RecentOrders />
       </motion.div>
 
       {/* Full Inventory Overview */}
