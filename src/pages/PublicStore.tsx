@@ -178,17 +178,9 @@ const PublicStore = () => {
                   <Button
                     size="sm"
                     className="flex-1"
-                    disabled={product.status !== "In stock"}
                     onClick={() => handleAddToCart(product)}
                   >
-                    {product.status === "In stock" ? (
-                      <>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add to Cart
-                      </>
-                    ) : (
-                      "Out of Stock"
-                    )}
+                    Add to Cart
                   </Button>
                 </div>
               </CardContent>

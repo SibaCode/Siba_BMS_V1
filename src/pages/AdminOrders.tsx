@@ -16,7 +16,8 @@ import {
   FileText, 
   Download,
   ShoppingCart,
-  Eye
+  Eye,
+  Plus
 } from "lucide-react";
 
 const AdminOrders = () => {
@@ -47,15 +48,14 @@ const AdminOrders = () => {
   }, []);
   
   const filteredOrders = orders.filter(order => {
-    // Compose a string for customer name
-    const customerName = `${order.customer.firstName} ${order.customer.lastName}`.toLowerCase();
-    
-    const matchesSearch = customerName.includes(searchTerm.toLowerCase()) ||
-                         order.id.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || order.paymentStatus.toLowerCase() === statusFilter;
+    const customerName = String(order.customerInfo?.name || order.customer || '');
+    const orderId = String(order.id || '');
+    const matchesSearch = customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         orderId.toLowerCase().includes(searchTerm.toLowerCase());
+    const paymentStatus = String(order.paymentStatus || '');
+    const matchesStatus = statusFilter === "all" || paymentStatus.toLowerCase() === statusFilter;
     return matchesSearch && matchesStatus;
   });
-  
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -131,15 +131,16 @@ const AdminOrders = () => {
               <h1 className="text-2xl font-bold text-foreground">Order Management</h1>
             </div>
             <div className="flex items-center space-x-4">
+              <Button asChild className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700">
+                <Link to="/admin/orders/create">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Order
+                </Link>
+              </Button>
               <Button variant="outline" onClick={exportToCSV}>
                 <Download className="h-4 w-4 mr-2" />
                 Export CSV
               </Button>
-
-          
-          <Button asChild variant="destructive">
-              <Link to="/admin/create-order">Create Order</Link>
-            </Button>
             </div>
           </div>
         </div>
@@ -223,18 +224,12 @@ const AdminOrders = () => {
                   <TableRow key={order.id}>
                     <TableCell className="font-medium">{order.id || 'N/A'}</TableCell>
                     <TableCell>
-  <div>
-    <div className="font-medium">
-      {order.customerInfo?.name ||
-        `${order.customer?.firstName || ''} ${order.customer?.lastName || ''}`.trim() ||
-        'N/A'}
-    </div>
-    <div className="text-sm text-muted-foreground">
-      {order.customerInfo?.phone || order.customer?.phone || order.phone || 'N/A'}
-    </div>
-  </div>
-</TableCell>
-
+                      <div>
+                        <div className="font-medium">{order.customerInfo?.name || `${order.customer?.firstName || ''} ${order.customer?.lastName || ''}`.trim() || 'N/A'}
+                        </div>
+                        <div className="text-sm text-muted-foreground">{order.customerInfo?.phone || order.phone || 'N/A'}</div>
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <div className="text-sm">
                         {(order.items || []).map((item, index) => (

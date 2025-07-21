@@ -1,201 +1,238 @@
-import React, { useState } from 'react';
+import { useEffect, useState } from "react";
+import { collection, getDocs, addDoc, updateDoc, doc } from "firebase/firestore";
+import { db } from "@/firebase";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select"; // Adjust imports if needed
 
-interface CustomerData {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  address: string;
-  city: string;
-  postalCode: string;
-  province: string;
-  createdAt: string;
-}
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+const statusColors: any = {
+  Pending: "secondary",
+  Processing: "warning",
+  Shipped: "info",
+  Delivered: "success",
+};
 
-interface Product {
-  id: string;
-  name: string;
-  price: number;
-  availableQty: number;
-  selected?: boolean;
-}
+const CreateOrderForm = () => {
+  const [products, setProducts] = useState<any[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [selectedVariantId, setSelectedVariantId] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [loadingOrders, setLoadingOrders] = useState(true);
 
-interface Props {
-  products: Product[];
-  onSave: (customer: CustomerData, selectedProducts: Product[]) => void;
-}
+  // Fetch products
+  useEffect(() => {
+    async function fetchProducts() {
+      const snapshot = await getDocs(collection(db, "products"));
+      const list = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      setProducts(list);
+    }
+    fetchProducts();
+  }, []);
 
-const Label: React.FC<{ htmlFor: string; children: React.ReactNode }> = ({ htmlFor, children }) => (
-  <label htmlFor={htmlFor} className="block font-semibold mb-1">
-    {children}
-  </label>
-);
-
-const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement>> = (props) => (
-  <input
-    {...props}
-    className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-orange-400"
-  />
-);
-
-const CreateOrderForm: React.FC<Props> = ({ products, onSave }) => {
-  const [customer, setCustomer] = useState<CustomerData>({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    address: '',
-    city: '',
-    postalCode: '',
-    province: '',
-    createdAt: new Date().toISOString(),
-  });
-
-  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
-
-  const handleChange = (field: keyof CustomerData, value: string) => {
-    setCustomer((prev) => ({ ...prev, [field]: value }));
+  // Fetch orders
+  const fetchOrders = async () => {
+    setLoadingOrders(true);
+    const snapshot = await getDocs(collection(db, "orders"));
+    const list = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    setOrders(list);
+    setLoadingOrders(false);
   };
 
-  const handleProductToggle = (productId: string) => {
-    setSelectedProductIds((prev) =>
-      prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId]
-    );
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  const selectedVariant = selectedProduct?.variants?.find((v: any) => v.variantID === selectedVariantId);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedProduct || !selectedVariant || !customerName || !deliveryAddress) {
+      alert("Please fill in all fields.");
+      return;
+    }
+
+    const newOrder = {
+      customerName,
+      deliveryAddress,
+      productId: selectedProduct.id,
+      productName: selectedProduct.name,
+      variant: selectedVariant,
+      status: "Pending",
+      createdAt: new Date().toISOString(),
+    };
+
+    try {
+      await addDoc(collection(db, "orders"), newOrder);
+      alert("Order submitted!");
+      // Reset form
+      setCustomerName("");
+      setDeliveryAddress("");
+      setSelectedProduct(null);
+      setSelectedVariantId("");
+      fetchOrders();
+    } catch (err) {
+      console.error("Error submitting order:", err);
+    }
   };
 
-  const handleSubmit = () => {
-    const selectedProducts = products.filter((p) => selectedProductIds.includes(p.id));
-    onSave(customer, selectedProducts);
+  const updateOrderStatus = async (orderId: string, newStatus: string) => {
+    const orderRef = doc(db, "orders", orderId);
+    await updateDoc(orderRef, { status: newStatus });
+    fetchOrders();
   };
 
   return (
-    <div className="p-6 space-y-8">
-      <div>
-        <h2 className="text-xl font-bold mb-4">Customer Information</h2>
-        <div className="grid grid-cols-2 gap-6">
-          <div>
-            <Label htmlFor="firstName">First Name *</Label>
-            <Input
-              id="firstName"
-              value={customer.firstName}
-              onChange={(e) => handleChange('firstName', e.target.value)}
-              placeholder="e.g. Sibahle"
-            />
-          </div>
+    <div className="max-w-7xl mx-auto p-6">
+      {/* Order Form */}
+      <Card className="mb-10">
+        <CardHeader>
+          <CardTitle>Create New Order</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Product Selector */}
+            <div>
+              <label className="block text-sm font-medium mb-1">Select Product</label>
+              <Select
+                value={selectedProduct?.id || ""}
+                onValueChange={(val) => {
+                  const product = products.find((p) => p.id === val);
+                  setSelectedProduct(product);
+                  setSelectedVariantId("");
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose product" />
+                </SelectTrigger>
+                <SelectContent>
+                  {products.map((product) => (
+                    <SelectItem key={product.id} value={product.id}>
+                      {product.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-          <div>
-            <Label htmlFor="lastName">Last Name *</Label>
-            <Input
-              id="lastName"
-              value={customer.lastName}
-              onChange={(e) => handleChange('lastName', e.target.value)}
-              placeholder="e.g. Mvubu"
-            />
-          </div>
+            {/* Variant Selector */}
+            {selectedProduct && (
+              <div>
+                <label className="block text-sm font-medium mb-1">Select Variant</label>
+                <Select
+                  value={selectedVariantId}
+                  onValueChange={(val) => setSelectedVariantId(val)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose variant" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {selectedProduct.variants?.map((variant: any) => (
+                      <SelectItem key={variant.variantID} value={variant.variantID}>
+                        {variant.size || variant.name} - {variant.color} - R{variant.sellingPrice}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
-          <div>
-            <Label htmlFor="email">Email *</Label>
-            <Input
-              id="email"
-              type="email"
-              value={customer.email}
-              onChange={(e) => handleChange('email', e.target.value)}
-              placeholder="e.g. mvubusiba@gmail.com"
-            />
-          </div>
+            {/* Customer Info */}
+            <div>
+              <label className="block text-sm font-medium mb-1">Customer Name</label>
+              <Input
+                placeholder="e.g. Jane Doe"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Delivery Address</label>
+              <Input
+                placeholder="e.g. 123 Main Street"
+                value={deliveryAddress}
+                onChange={(e) => setDeliveryAddress(e.target.value)}
+              />
+            </div>
 
-          <div>
-            <Label htmlFor="phone">Phone *</Label>
-            <Input
-              id="phone"
-              value={customer.phone}
-              onChange={(e) => handleChange('phone', e.target.value)}
-              placeholder="e.g. 0711035654"
-            />
-          </div>
+            {/* Submit */}
+            <Button type="submit" className="w-full">
+              Submit Order
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
-          <div>
-            <Label htmlFor="address">Address *</Label>
-            <Input
-              id="address"
-              value={customer.address}
-              onChange={(e) => handleChange('address', e.target.value)}
-              placeholder="e.g. D1515 Ntaphuka Road"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="city">City *</Label>
-            <Input
-              id="city"
-              value={customer.city}
-              onChange={(e) => handleChange('city', e.target.value)}
-              placeholder="e.g. Verulam"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="postalCode">Postal Code *</Label>
-            <Input
-              id="postalCode"
-              value={customer.postalCode}
-              onChange={(e) => handleChange('postalCode', e.target.value)}
-              placeholder="e.g. 4342"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="province">Province *</Label>
-            <Input
-              id="province"
-              value={customer.province}
-              onChange={(e) => handleChange('province', e.target.value)}
-              placeholder="e.g. KwaZulu-Natal"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Product Table */}
-      <div>
-        <h2 className="text-xl font-bold mb-4">Select Products</h2>
-        <table className="min-w-full border text-sm">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="p-2 border">Select</th>
-              <th className="p-2 border">Name</th>
-              <th className="p-2 border">Price</th>
-              <th className="p-2 border">Available Qty</th>
-            </tr>
-          </thead>
-          <tbody>
-            {products.map((product) => (
-              <tr key={product.id}>
-                <td className="p-2 border text-center">
-                  <input
-                    type="checkbox"
-                    checked={selectedProductIds.includes(product.id)}
-                    onChange={() => handleProductToggle(product.id)}
-                  />
-                </td>
-                <td className="p-2 border">{product.name}</td>
-                <td className="p-2 border">R{product.price.toFixed(2)}</td>
-                <td className="p-2 border">{product.availableQty}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Save Button */}
-      <div className="text-right">
-        <button
-          onClick={handleSubmit}
-          className="px-6 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition"
-        >
-          Save Order
-        </button>
-      </div>
+      {/* Orders Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>All Orders</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loadingOrders ? (
+            <p className="text-center text-muted-foreground">Loading orders...</p>
+          ) : orders.length === 0 ? (
+            <p className="text-center text-muted-foreground">No orders yet.</p>
+          ) : (
+            <div className="overflow-auto">
+              <table className="min-w-full border">
+                <thead className="bg-muted text-left">
+                  <tr>
+                    <th className="p-3">Customer</th>
+                    <th className="p-3">Product</th>
+                    <th className="p-3">Variant</th>
+                    <th className="p-3">Address</th>
+                    <th className="p-3">Price</th>
+                    <th className="p-3">Status</th>
+                    <th className="p-3">Update</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {orders.map((order, idx) => (
+                    <tr key={order.id} className={idx % 2 === 0 ? "bg-white" : "bg-muted/20"}>
+                      <td className="p-3">{order.customerName}</td>
+                      <td className="p-3">{order.productName}</td>
+                      <td className="p-3">{order.variant?.size} / {order.variant?.color}</td>
+                      <td className="p-3">{order.deliveryAddress}</td>
+                      <td className="p-3">R{order.variant?.sellingPrice}</td>
+                      <td className="p-3">
+                        <Badge variant={statusColors[order.status] || "secondary"}>
+                          {order.status}
+                        </Badge>
+                      </td>
+                      <td className="p-3">
+                        <Select
+                          value={order.status}
+                          onValueChange={(val) => updateOrderStatus(order.id, val)}
+                        >
+                          <SelectTrigger className="w-[120px]">
+                            <SelectValue placeholder="Status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Pending">Pending</SelectItem>
+                            <SelectItem value="Processing">Processing</SelectItem>
+                            <SelectItem value="Shipped">Shipped</SelectItem>
+                            <SelectItem value="Delivered">Delivered</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

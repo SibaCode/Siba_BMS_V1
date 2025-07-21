@@ -45,6 +45,7 @@ const BusinessInfoPage = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [businessInfo, setBusinessInfo] = useState<any>({});
+  // const [businessInfo, setBusinessInfo] = useState<any[]>([]);
 
   useEffect(() => {
     async function fetchBusinessInfo() {

@@ -15,34 +15,61 @@ import {
   DollarSign, 
   TrendingUp, 
   AlertTriangle,
-  CreditCard,
-  Truck,User,
   Plus,
   Eye,
   Search,
   Filter,
   Calendar,
-  BarChart3
+  BarChart3,
+  CheckCircle,
+  Clock,
+  XCircle,
+  CreditCard,
+  UserPlus,
+  Truck
 } from "lucide-react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
-import RecentOrders from "./components/RecentOrders";
-import CustomerOverview from "./components/CustomerOverview";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 
-// Mock data for charts
-const salesData = [
-  { name: 'Jan', sales: 4000, revenue: 24000 },
-  { name: 'Feb', sales: 3000, revenue: 18000 },
-  { name: 'Mar', sales: 5000, revenue: 30000 },
-  { name: 'Apr', sales: 4500, revenue: 27000 },
-  { name: 'May', sales: 6000, revenue: 36000 },
-  { name: 'Jun', sales: 5500, revenue: 33000 },
+// Mock data for enhanced dashboard
+const stockOverviewData = [
+  { category: 'Aprons', units: 5, isLowStock: true },
+  { category: 'Umbrellas', units: 10, isLowStock: false },
+  { category: 'T-Shirts', units: 25, isLowStock: false },
+  { category: 'Mugs', units: 3, isLowStock: true },
+  { category: 'Bags', units: 18, isLowStock: false },
 ];
 
-const inventoryData = [
-  { category: 'Apparel', stock: 45, lowStock: 3 },
-  { category: 'Drinkware', stock: 23, lowStock: 2 },
-  { category: 'Kitchen', stock: 18, lowStock: 1 },
-  { category: 'Accessories', stock: 32, lowStock: 0 },
+const orderStatusData = [
+  { status: 'Delivered', count: 1, color: '#10b981' },
+  { status: 'Not Delivered', count: 3, color: '#f59e0b' },
+];
+
+const paymentStatusData = [
+  { status: 'Paid', count: 15, color: '#10b981' },
+  { status: 'Pending', count: 8, color: '#f59e0b' },
+  { status: 'Failed', count: 2, color: '#ef4444' },
+];
+
+const recentCustomers = [
+  { name: 'Sarah Johnson', email: 'sarah@example.com', joinDate: '2 hours ago', orders: 3 },
+  { name: 'Mike Chen', email: 'mike@example.com', joinDate: '5 hours ago', orders: 1 },
+  { name: 'Emily Davis', email: 'emily@example.com', joinDate: '1 day ago', orders: 2 },
+  { name: 'Alex Wilson', email: 'alex@example.com', joinDate: '2 days ago', orders: 4 },
+];
+
+const recentOrders = [
+  { id: 'ORD-001', customer: 'Sarah Johnson', amount: 450, status: 'delivered', time: '2 hours ago' },
+  { id: 'ORD-002', customer: 'Mike Chen', amount: 230, status: 'processing', time: '5 hours ago' },
+  { id: 'ORD-003', customer: 'Emily Davis', amount: 180, status: 'delivered', time: '1 day ago' },
+  { id: 'ORD-004', customer: 'Alex Wilson', amount: 320, status: 'pending', time: '1 day ago' },
+];
+
+const inventoryOverview = [
+  { name: "Custom Aprons", category: "Aprons", stock: 5, price: 95, status: "Low Stock" },
+  { name: "Travel Umbrellas", category: "Umbrellas", stock: 10, price: 120, status: "Active" },
+  { name: "Premium T-Shirts", category: "T-Shirts", stock: 25, price: 85, status: "Active" },
+  { name: "Coffee Mugs", category: "Mugs", stock: 3, price: 45, status: "Low Stock" },
+  { name: "Laptop Bags", category: "Bags", stock: 18, price: 150, status: "Active" },
 ];
 
 const containerVariants = {
@@ -65,34 +92,46 @@ const cardVariants = {
 
 const AdminDashboard = () => {
   const [totalProducts, setTotalProducts] = useState(0);
-  // const [totalOrders, setTotalOrders] = useState(0);
+  const [totalOrders, setTotalOrders] = useState(0);
   const [totalCustomers, setTotalCustomers] = useState(0);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  // const [lowStockCount, setLowStockCount] = useState(6);
-  const [todaySales] = useState(850);
-  const [monthlyRevenue] = useState(12340);
-  const [products, setProducts] = useState<any[]>([]);
-  const [orders, setOrders] = useState<any[]>([]);
-  const { customers } = CustomerOverview();
-
-  // When you fetch your customers data, update the state
-  // For example:
-  // setCustomers(fetchedCustomers);
   
-  <CustomerOverview customers={customers} />
+  // Calculate dynamic stats
+  const lowStockCategories = stockOverviewData.filter(item => item.isLowStock).length;
+  const totalStockItems = stockOverviewData.reduce((sum, item) => sum + item.units, 0);
+  const deliveredOrders = orderStatusData.find(item => item.status === 'Delivered')?.count || 0;
+  const notDeliveredOrders = orderStatusData.find(item => item.status === 'Not Delivered')?.count || 0;
+  const paidAmount = paymentStatusData.find(item => item.status === 'Paid')?.count || 0;
   
-console.log(products)
+  const [businessInfo, setBusinessInfo] = useState<any[]>([]);
+  console.log(businessInfo)
+  useEffect(() => {
+    async function fetchBusinessInfo() {
+      try {
+        const businessInfoCol = collection(db, "businessInfo");  
+        const businessInfoSnapshot = await getDocs(businessInfoCol);
+        const businessInfoList = businessInfoSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setBusinessInfo(businessInfoList);
+        console.log(businessInfoList)
+      } catch (error) {
+        console.error("Error fetching products:", error);
+      }
+    }
+    fetchBusinessInfo();
+  }, []);
   useEffect(() => {
     const fetchStats = async () => {
       try {
         const productsSnapshot = await getDocs(collection(db, "products"));
         const ordersSnapshot = await getDocs(collection(db, "orders"));
         const customersSnapshot = await getDocs(collection(db, "customers"));
-        console.log(productsSnapshot)
 
         setTotalProducts(productsSnapshot.size);
-        // setTotalOrders(ordersSnapshot.size);
+        setTotalOrders(ordersSnapshot.size);
         setTotalCustomers(customersSnapshot.size);
       } catch (err) {
         console.error("Error fetching stats", err);
@@ -103,218 +142,44 @@ console.log(products)
 
     fetchStats();
   }, []);
- ;
 
-  const fetchProducts = async () => {
-    setLoading(true);
-    try {
-      const querySnapshot = await getDocs(collection(db, "products"));
-      const items = querySnapshot.docs.map(doc => ({
-      docId: doc.id,   // "apron", "mug", etc.
-      ...doc.data()
-    }));
-      console.log(items)
-      setProducts(items);
-    } catch (error) {
-      console.error("Error fetching products:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-  const fetchOrders = async () => {
-    setLoading(true);
-    try {
-      const querySnapshot = await getDocs(collection(db, "orders"));
-      const items = querySnapshot.docs.map(doc => ({
-        docId: doc.id,
-        ...doc.data(),
-      }));
-      console.log("Orders:", items);
-      setOrders(items);
-    } catch (error) {
-      console.error("Error fetching orders:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-  useEffect(() => {
-    fetchProducts();
-    fetchOrders();
-  }, [])
-// Threshold for low stock alert per category
-const lowStockThreshold = 10;
-
-// Aggregate stock by category (object)
-const categoryStock = products.reduce((acc, product) => {
-  const totalStockForProduct = product.variants.reduce(
-    (sum, variant) => sum + (variant.stockQuantity || 0),
-    0
-  );
-  if (acc[product.category]) {
-    acc[product.category] += totalStockForProduct;
-  } else {
-    acc[product.category] = totalStockForProduct;
-  }
-  return acc;
-}, {} as Record<string, number>);
-
-// Convert to array and add isLow flag
-const categoryStockSummary = Object.entries(categoryStock).map(
-  ([category, totalStock]: [string, number]) => ({
-    category,
-    totalStock,
-    isLow: totalStock < lowStockThreshold,
-  })
-);
-const totalStock = categoryStockSummary.reduce(
-  (sum, { totalStock }) => sum + totalStock,
-  0
-);
-const lowStockCount = categoryStockSummary.filter(c => c.isLow).length;
-const totalOrders = orders.length;
-
-const paidOrders = orders.filter(o => o.paymentStatus?.toLowerCase() === "paid");
-const pendingPayments = orders.filter(o => o.paymentStatus?.toLowerCase() === "pending");
-const failedPayments = orders.filter(o => o.paymentStatus?.toLowerCase() === "failed");
-const processingPayments = orders.filter(o => o.paymentStatus?.toLowerCase() === "processing");
-
-const deliveredOrders = orders.filter(
-  o =>
-    o.deliveryStatus?.toLowerCase() === "delivered" ||
-    o.status?.toLowerCase() === "delivered"
-);
-const notDeliveredOrders = orders.length - deliveredOrders.length;
-
-const totalRevenue = paidOrders.reduce((sum, order) => sum + (order.total || 0), 0);
-
-
-
-  // Flatten variants for the table
-  const flattenedVariants = products.flatMap((product) =>
-    product.variants.map((variant) => ({
-      docId: product.docId,
-      name: product.name,
-      category: product.category,
-      variantType: variant.type,
-      size: variant.size,
-      color: variant.color,
-      stockQuantity: variant.stockQuantity,
-      sellingPrice: variant.sellingPrice,
-      productImage: product.productImage,
-      status: variant.stockQuantity <= 5 ? "Low Stock" : product.status,
-    }))
-  );
-
-  // Filter based on search input (checks name, category, variantType, color, size)
-  const filteredVariants = flattenedVariants.filter((item) =>
-    [
-      item.name,
-      item.category,
-      item.variantType,
-      item.color,
-      item.size,
-    ]
-      .join(" ")
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase())
-  );
-// Count low stock categories
   const statsCards = [
- 
     {
-      title: "Stock Overview",
-      value: `${totalStock} units `, // or total products count if desired
-      description: (
-        <ul className="text-sm max-h-28 overflow-y-auto space-y-1">
-          {categoryStockSummary.map(({ category, totalStock, isLow }) => (
-            <li
-              key={category}
-              className={isLow ? "text-red-600 font-semibold" : "text-gray-700"}
-              title={isLow ? "Low stock alert" : ""}
-            >
-              {category} → {totalStock} units
-            </li>
-          ))}
-        </ul>
-      ),
+      title: "Total Stock Items",
+      value: loading ? "..." : totalStockItems,
+      description: "Units in inventory",
       icon: Package,
-      color: "from-orange-500 to-orange-600",
-      change: lowStockCount > 0
-        ? `${lowStockCount} categor${lowStockCount > 1 ? "ies" : "y"} low in stock`
-        : "Stock levels are healthy",
-      changeColor: lowStockCount > 0 ? "text-red-600" : "text-green-600",
-    }
-    ,    
+      color: "from-blue-500 to-blue-600",
+      change: `${lowStockCategories} categories low`
+    },
     {
-  title: "Order Summary",
-  value: `${orders.length} orders`,
-  description: (
-    <ul className="text-sm space-y-1">
-      <li className="text-green-600">Delivered → {deliveredOrders.length}</li>
-      <li className="text-gray-700">Not Delivered → {notDeliveredOrders}</li>
-    </ul>
-  ),
-  icon: Truck,
-  color: "from-gray-500 to-gray-600",
-  change: notDeliveredOrders > 0
-    ? `${notDeliveredOrders} pending`
-    : "All delivered",
-  changeColor: notDeliveredOrders > 0 ? "text-yellow-600" : "text-green-600"
-},
-{
-  title: "Payment Summary",
-  value: `${orders.length} orders`,
-  description: (
-    <ul className="text-sm space-y-1">
-      <li className="text-yellow-600">Pending → {pendingPayments.length}</li>
-      <li className="text-red-600">Failed → {failedPayments.length}</li>
-      <li className="text-blue-600">Processing → {processingPayments.length}</li>
-    </ul>
-  ),
-  icon: CreditCard,
-  color: "from-yellow-500 to-yellow-600",
-  change: pendingPayments.length > 0
-    ? `${pendingPayments.length} need action`
-    : "No pending payments",
-  changeColor: pendingPayments.length > 0 ? "text-yellow-600" : "text-green-600"
-}
-
-
-    // {
-    //   title: "Total Products",
-    //   value: loading ? "..." : totalProducts,
-    //   description: "Active in inventory",
-    //   icon: Package,
-    //   color: "from-blue-500 to-blue-600",
-    //   change: "+2 this week"
-    // },
-    // {
-    //   title: "Low Stock Items",
-    //   value: loading ? "..." : lowStockCount,
-    //   description: "Need restocking",
-    //   icon: AlertTriangle,
-    //   color: "from-amber-500 to-orange-600",
-    //   change: "Urgent attention"
-    // },
-    // {
-    //   title: "Sales Today",
-    //   value: `R${todaySales}`,
-    //   description: "Today's revenue",
-    //   icon: DollarSign,
-    //   color: "from-green-500 to-emerald-600",
-    //   change: "+12% vs yesterday"
-    // },
-    // {
-    //   title: "Revenue This Month",
-    //   value: `R${monthlyRevenue}`,
-    //   description: "Monthly earnings",
-    //   icon: TrendingUp,
-    //   color: "from-purple-500 to-pink-600",
-    //   change: "+18% vs last month"
-    // }
+      title: "Orders Delivered",
+      value: loading ? "..." : deliveredOrders,
+      description: "Successfully completed",
+      icon: CheckCircle,
+      color: "from-green-500 to-emerald-600",
+      change: `${notDeliveredOrders} pending delivery`
+    },
+    {
+      title: "Payment Status",
+      value: loading ? "..." : paidAmount,
+      description: "Successful payments",
+      icon: CreditCard,
+      color: "from-purple-500 to-pink-600",
+      change: "Latest transactions"
+    },
+    {
+      title: "New Customers",
+      value: loading ? "..." : recentCustomers.length,
+      description: "Recently joined",
+      icon: UserPlus,
+      color: "from-amber-500 to-orange-600",
+      change: "This week"
+    }
   ];
 
   return (
+
     <motion.div 
       className="space-y-8"
       variants={containerVariants}
@@ -327,8 +192,8 @@ const totalRevenue = paidOrders.reduce((sum, order) => sum + (order.total || 0),
         variants={cardVariants}
       >
         <div>
-          {/* <h1 className="text-3xl font-bold text-gradient">Dashboard Overview</h1> */}
-          <p className="text-muted-foreground">Welcome back! Here's what's happening with your business.</p>
+          <h1 className="text-3xl font-bold text-gradient"> {businessInfo?.[0]?.name} , </h1>
+          <p className="text-muted-foreground">  Here's what's happening with your business.</p>
         </div>
         <div className="flex items-center gap-2">
           <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -342,9 +207,9 @@ const totalRevenue = paidOrders.reduce((sum, order) => sum + (order.total || 0),
           </span>
         </div>
       </motion.div>
-
+    
       {/* Quick Actions */}
-      {/* <motion.div 
+      <motion.div 
         className="flex flex-wrap gap-3"
         variants={cardVariants}
       >
@@ -372,7 +237,7 @@ const totalRevenue = paidOrders.reduce((sum, order) => sum + (order.total || 0),
             Business Info
           </Link>
         </Button>
-      </motion.div> */}
+      </motion.div>
 
       {/* Stats Grid */}
       <motion.div 
@@ -399,214 +264,306 @@ const totalRevenue = paidOrders.reduce((sum, order) => sum + (order.total || 0),
         ))}
       </motion.div>
 
-      {/* Charts Section */}
-      {/* <motion.div 
+      {/* Stock Overview & Order Summary */}
+      <motion.div 
         className="grid grid-cols-1 lg:grid-cols-2 gap-6"
         variants={containerVariants}
       >
-        <motion.div variants={cardVariants}>
-          <Card className="card-hover shadow-elegant">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-primary" />
-                Sales Trend
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={salesData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Line 
-                    type="monotone" 
-                    dataKey="revenue" 
-                    stroke="hsl(24 95% 53%)" 
-                    strokeWidth={3}
-                    dot={{ fill: "hsl(24 95% 53%)", strokeWidth: 2, r: 6 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </motion.div>
-
         <motion.div variants={cardVariants}>
           <Card className="card-hover shadow-elegant">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Package className="h-5 w-5 text-primary" />
-                Inventory by Category
+                Stock Overview
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={inventoryData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="category" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="stock" fill="hsl(24 95% 53%)" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </motion.div> */}
-
-      {/* Recent Activity & Alerts */}
-       {/* Enhanced Inventory Table */}
-      <motion.div variants={cardVariants}>
-      <Card className="card-hover shadow-elegant">
-      <CardHeader>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <CardTitle>Inventory Overview</CardTitle>
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search products..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 w-64"
-              />
-            </div>
-            <Button variant="outline" size="sm" className="card-hover">
-              <Filter className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Product Name</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Variant</TableHead>
-              <TableHead>Size</TableHead>
-              <TableHead>Color</TableHead>
-              <TableHead>Stock</TableHead>
-              <TableHead>Price (R)</TableHead>
-              <TableHead>Status</TableHead>
-              {/* <TableHead>Actions</TableHead> */}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredVariants.map((item, index) => (
-              <motion.tr
-                key={`${item.docId}-${item.variantType}-${item.size}-${item.color}`}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                className="hover:bg-secondary/50 transition-smooth"
-              >
-                <TableCell className="font-medium flex items-center gap-2">
-                  {/* Optional: Small product image */}
-                  <img
-                    src={item.productImage}
-                    alt={item.name}
-                    className="w-8 h-8 object-cover rounded"
-                  />
-                  {item.name}
-                </TableCell>
-                <TableCell>{item.category}</TableCell>
-                <TableCell>{item.variantType}</TableCell>
-                <TableCell>{item.size}</TableCell>
-                <TableCell>{item.color}</TableCell>
-                <TableCell
-                  className={
-                    item.stockQuantity <= 5 ? "text-amber-600 font-medium" : ""
-                  }
-                >
-                  {item.stockQuantity}
-                </TableCell>
-                <TableCell>{item.sellingPrice}</TableCell>
-                <TableCell>
-                  <Badge variant={item.status === "Low Stock" ? "destructive" : "secondary"}>
-                    {item.status}
-                  </Badge>
-                </TableCell>
-              </motion.tr>
-            ))}
-          </TableBody>
-        </Table>
-        <div className="mt-4 flex justify-between items-center">
-          <p className="text-sm text-muted-foreground">
-            Showing {filteredVariants.length} of {flattenedVariants.length} variants
-          </p>
-          <Button asChild variant="outline" className="card-hover">
-            <a href="/admin/inventory">View Full Inventory</a>
-          </Button>
-          
-        </div>
-        
-      </CardContent>
-    </Card>
-      </motion.div>
-      <motion.div 
-        className="grid grid-cols-1 lg:grid-cols-2 gap-6"
-        variants={containerVariants}
-      >
-              <motion.div variants={cardVariants}>
-          <Card className="card-hover shadow-elegant">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <User className="h-5 w-5 text-blue-500" /> 
-                <span>Recent Customers</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4 max-h-64 overflow-y-auto">
-              {loading ? (
-                <p className="text-muted-foreground text-center">Loading...</p>
-              ) : customers.length === 0 ? (
-                <p className="text-muted-foreground text-center">No customers found.</p>
-              ) : (
-                customers.map((customer, index) => (
-                  <motion.div
-                    key={customer.orderNumber}
-                    className="flex flex-col sm:flex-row sm:justify-between p-3 rounded-lg bg-secondary/50 transition-smooth hover:bg-secondary"
+              <div className="space-y-4">
+                {stockOverviewData.map((item, index) => (
+                  <motion.div 
+                    key={item.category}
+                    className="flex justify-between items-center p-4 rounded-lg bg-gradient-to-r from-card to-secondary/20 border transition-smooth hover:shadow-md"
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.1 }}
                   >
-                    <div className="flex flex-col sm:flex-row sm:space-x-6 text-sm font-medium">
-                      <span>{customer.name}</span>
-                      <span className="text-muted-foreground">{customer.orderNumber}</span>
-                      <Badge variant="default" className="self-start sm:self-center">
-                        {customer.totalOrders} orders
-                      </Badge>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-3 h-3 rounded-full ${item.isLowStock ? 'bg-red-500' : 'bg-green-500'}`} />
+                      <span className="font-medium">{item.category}</span>
                     </div>
-                    <div className="flex flex-col sm:flex-row sm:space-x-6 text-xs text-muted-foreground mt-2 sm:mt-0">
-                      <span>{customer.location}</span>
-                      <span>{customer.phone}</span>
-                      <span>{customer.email}</span>
+                    <div className="text-right">
+                      <div className="text-lg font-bold">{item.units} units</div>
+                      {item.isLowStock && (
+                        <Badge variant="destructive" className="text-xs">Low Stock</Badge>
+                      )}
                     </div>
                   </motion.div>
-                 ))
-                )}
-               
+                ))}
+                <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <div className="flex items-center gap-2 text-amber-800">
+                    <AlertTriangle className="h-4 w-4" />
+                    <span className="text-sm font-medium">{lowStockCategories} categories low in stock</span>
+                  </div>
+                </div>
               </div>
-              <div className="mt-4 flex justify-between items-center">
-          
-          <Button asChild variant="outline" size="sm" className="w-full mt-3 card-hover">
-                  <Link to="/admin/customers">
-                    View All Customers
-                  </Link>
-                </Button>
-        </div>
             </CardContent>
           </Card>
         </motion.div>
 
+        <motion.div variants={cardVariants}>
+          <Card className="card-hover shadow-elegant">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Truck className="h-5 w-5 text-primary" />
+                Order & Payment Summary
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {/* Order Status */}
+                <div>
+                  <h4 className="font-medium mb-3 flex items-center gap-2">
+                    <ShoppingCart className="h-4 w-4" />
+                    Order Status
+                  </h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    {orderStatusData.map((item, index) => (
+                      <motion.div 
+                        key={item.status}
+                        className="p-3 rounded-lg border bg-gradient-to-r from-card to-secondary/10"
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: index * 0.1 }}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          {item.status === 'Delivered' ? 
+                            <CheckCircle className="h-4 w-4 text-green-500" /> : 
+                            <Clock className="h-4 w-4 text-amber-500" />
+                          }
+                          <span className="text-sm font-medium">{item.status}</span>
+                        </div>
+                        <div className="text-2xl font-bold" style={{ color: item.color }}>{item.count}</div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
 
-        <RecentOrders />
-
+                {/* Payment Status */}
+                <div>
+                  <h4 className="font-medium mb-3 flex items-center gap-2">
+                    <CreditCard className="h-4 w-4" />
+                    Payment Status
+                  </h4>
+                  <div className="grid grid-cols-3 gap-2">
+                    {paymentStatusData.map((item, index) => (
+                      <motion.div 
+                        key={item.status}
+                        className="p-3 rounded-lg border bg-gradient-to-r from-card to-secondary/10 text-center"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                      >
+                        <div className="text-lg font-bold" style={{ color: item.color }}>{item.count}</div>
+                        <div className="text-xs text-muted-foreground">{item.status}</div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
       </motion.div>
 
-     
+      {/* Recent Customers & Recent Orders */}
+      <motion.div 
+        className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+        variants={containerVariants}
+      >
+        <motion.div variants={cardVariants}>
+          <Card className="card-hover shadow-elegant">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <UserPlus className="h-5 w-5 text-blue-500" />
+                <span>Recent Customers</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {recentCustomers.map((customer, index) => (
+                  <motion.div 
+                    key={customer.email}
+                    className="flex justify-between items-center p-4 rounded-lg bg-gradient-to-r from-card to-secondary/20 border transition-smooth hover:shadow-md"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Users className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <div className="font-medium">{customer.name}</div>
+                        <div className="text-sm text-muted-foreground">{customer.email}</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-medium">{customer.orders} orders</div>
+                      <div className="text-xs text-muted-foreground">{customer.joinDate}</div>
+                    </div>
+                  </motion.div>
+                ))}
+                <Button asChild variant="outline" size="sm" className="w-full mt-3 card-hover">
+                  <Link to="/admin/customers">
+                    View All Customers
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div variants={cardVariants}>
+          <Card className="card-hover shadow-elegant">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <ShoppingCart className="h-5 w-5 text-green-500" />
+                <span>Recent Orders</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {recentOrders.map((order, index) => (
+                  <motion.div 
+                    key={order.id}
+                    className="flex justify-between items-center p-4 rounded-lg bg-gradient-to-r from-card to-secondary/20 border transition-smooth hover:shadow-md"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                        {order.status === 'delivered' ? 
+                          <CheckCircle className="h-5 w-5 text-green-600" /> :
+                          <Clock className="h-5 w-5 text-amber-600" />
+                        }
+                      </div>
+                      <div>
+                        <div className="font-medium">{order.id}</div>
+                        <div className="text-sm text-muted-foreground">{order.customer}</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-semibold">R{order.amount}</div>
+                      <div className="text-xs text-muted-foreground">{order.time}</div>
+                    </div>
+                  </motion.div>
+                ))}
+                <Button asChild variant="outline" size="sm" className="w-full mt-3 card-hover">
+                  <Link to="/admin/orders">
+                    View All Orders
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </motion.div>
+
+      {/* Full Inventory Overview */}
+      <motion.div variants={cardVariants}>
+        <Card className="card-hover shadow-elegant">
+          <CardHeader>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-primary" />
+                Complete Inventory Overview
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search inventory..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 w-64"
+                  />
+                </div>
+                <Button variant="outline" size="sm" className="card-hover">
+                  <Filter className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Product Name</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Stock Quantity</TableHead>
+                  <TableHead>Price</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {inventoryOverview.filter(product => 
+                  product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  product.category.toLowerCase().includes(searchTerm.toLowerCase())
+                ).map((product, index) => (
+                  <motion.tr 
+                    key={product.name}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="hover:bg-secondary/50 transition-smooth"
+                  >
+                    <TableCell className="font-medium">{product.name}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{product.category}</Badge>
+                    </TableCell>
+                    <TableCell className={product.stock <= 5 ? "text-red-600 font-bold" : "font-medium"}>
+                      {product.stock} units
+                    </TableCell>
+                    <TableCell className="font-medium">R{product.price}</TableCell>
+                    <TableCell>
+                      <Badge 
+                        variant={product.status === "Low Stock" ? "destructive" : "default"}
+                        className={product.status === "Low Stock" ? "animate-pulse" : ""}
+                      >
+                        {product.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="sm" className="card-hover">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button asChild variant="outline" size="sm" className="card-hover">
+                          <Link to="/admin/inventory">
+                            Edit
+                          </Link>
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </motion.tr>
+                ))}
+              </TableBody>
+            </Table>
+            <div className="mt-6 flex justify-between items-center">
+              <p className="text-sm text-muted-foreground">
+                Showing {inventoryOverview.length} products • {stockOverviewData.reduce((sum, item) => sum + item.units, 0)} total units
+              </p>
+              <Button asChild className="gradient-primary shadow-elegant">
+                <Link to="/admin/inventory">
+                  Manage Full Inventory
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
     </motion.div>
   );
 };

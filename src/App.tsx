@@ -23,7 +23,7 @@ import ShoppingCart from "./pages/ShoppingCart";
 import Checkout from "./pages/Checkout";
 import OrderSuccess from "./pages/OrderSuccess";
 import { AdminLayout } from "./components/AdminLayout";
-import CreateOrderForm from "./pages/components/CreateOrderForm";
+import AdminCreateOrder from "./pages/AdminCreateOrder";
 
 const queryClient = new QueryClient();
 
@@ -78,12 +78,12 @@ const App = () => (
                 <AdminExpensesPage />
               </AdminLayout>
             } />
-             <Route path="/admin/create-order" element={
+             {/* <Route path="/admin/create-order" element={
               <AdminLayout title="Expense Management">
                 <CreateOrderForm />
               </AdminLayout>
-            } /> 
-            
+            } />  */}
+
             {/* Public store routes */}
             <Route path="/storefront" element={<StorefrontPage />} />
             <Route path="/store" element={<PublicStore />} />
@@ -91,7 +91,8 @@ const App = () => (
             <Route path="/store/cart" element={<ShoppingCart />} />
             <Route path="/store/checkout" element={<Checkout />} />
             <Route path="/store/success" element={<OrderSuccess />} />
-            
+            <Route path="/admin/orders/create" element={<AdminCreateOrder />} />
+
             {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />
           </Routes>
