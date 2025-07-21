@@ -31,6 +31,9 @@ import {
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import { InventoryOverview } from "@/pages/components/InventoryOverview";
 import RecentOrders from "./components/RecentOrders";
+import CustomerOverview from "./components/CustomerOverview";
+
+
 
 // Mock data for enhanced dashboard
 const stockOverviewData = [
@@ -530,7 +533,6 @@ const newCustomers = customers.length
       </motion.div>
 
       <InventoryOverview />
-
       {/* <RecentOrders /> */}
 
       {/* Recent Customers & Recent Orders */}
@@ -538,54 +540,15 @@ const newCustomers = customers.length
         className="grid grid-cols-1 lg:grid-cols-2 gap-6"
         variants={containerVariants}
       >
-        <motion.div variants={cardVariants}>
-          <Card className="card-hover shadow-elegant">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <UserPlus className="h-5 w-5 text-blue-500" />
-                <span>Recent Customers</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {recentCustomers.map((customer, index) => (
-                  <motion.div 
-                    key={customer.email}
-                    className="flex justify-between items-center p-4 rounded-lg bg-gradient-to-r from-card to-secondary/20 border transition-smooth hover:shadow-md"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Users className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <div className="font-medium">{customer.name}</div>
-                        <div className="text-sm text-muted-foreground">{customer.email}</div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm font-medium">{customer.orders} orders</div>
-                      <div className="text-xs text-muted-foreground">{customer.joinDate}</div>
-                    </div>
-                  </motion.div>
-                ))}
-                <Button asChild variant="outline" size="sm" className="w-full mt-3 card-hover">
-                  <Link to="/admin/customers">
-                    View All Customers
-                  </Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+       
+       <CustomerOverview  />
+
 
         <RecentOrders />
       </motion.div>
 
       {/* Full Inventory Overview */}
-      <motion.div variants={cardVariants}>
+      {/* <motion.div variants={cardVariants}>
         <Card className="card-hover shadow-elegant">
           <CardHeader>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -677,7 +640,7 @@ const newCustomers = customers.length
             </div>
           </CardContent>
         </Card>
-      </motion.div>
+      </motion.div> */}
     </motion.div>
   );
 };
