@@ -82,8 +82,21 @@ const AdminCreateOrder = () => {
   const [deliveryMethod, setDeliveryMethod] = useState("collect");
   const [courierDetails, setCourierDetails] = useState("");
   const [showCustomerList, setShowCustomerList] = useState(false);
+  const [allCustomers, setAllCustomers] = useState<CustomerInfo[]>([]);
+  interface CustomerInfo {
+    id?: string;
+    name: string;
+    email: string;
+    phone: string;
+    address: string;
+    city: string;
+    postalCode: string;
+  }
+  
   useEffect(() => {
     fetchProducts();
+    fetchCustomers();
+
   }, []);
 
   const fetchProducts = async () => {
@@ -105,7 +118,47 @@ const AdminCreateOrder = () => {
       setLoading(false);
     }
   };
-
+  const fetchCustomers = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, "customers"));
+      const customersData = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...(doc.data() as CustomerInfo),
+      }));
+      setAllCustomers(customersData);
+      console.log(customersData)
+    } catch (error) {
+      console.error("Error fetching customers:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load customers",
+        variant: "destructive",
+      });
+    }
+  };
+  const handleCustomerSelect = (customer: CustomerInfo) => {
+    setCustomerInfo({
+      name: customer.name,
+      phone: customer.phone,
+      email: customer.email || "",
+      address: customer.address || "",
+      city: customer.city || "",
+      postalCode: customer.postalCode || "",
+    });
+    setShowCustomerList(false);
+  };
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest("#name")) {
+        setShowCustomerList(false);
+      }
+    };
+  
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+    
   const addProductToOrder = (product: Product, variantIndex: number) => {
     const variant = product.variants[variantIndex];
     const existingItemIndex = orderItems.findIndex(
@@ -155,9 +208,11 @@ const AdminCreateOrder = () => {
   const calculateTotal = () => {
     return calculateSubtotal() + calculateTax();
   };
-  const filteredCustomers = mockCustomers.filter((c) =>
+  const filteredCustomers = allCustomers.filter((c) =>
     c.name.toLowerCase().includes(customerInfo.name.toLowerCase())
   );
+  console.log("Filtered customers:", filteredCustomers);
+
   const validateForm = () => {
     if (!customerInfo.name || !customerInfo.phone) {
       toast({
@@ -257,18 +312,35 @@ const AdminCreateOrder = () => {
                 </CardHeader>
                 <CardContent className="p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="name">Full Name *</Label>
-                      <Input
-                        id="name"
-                        value={customerInfo.name}
-                        onChange={(e) =>
-                          setCustomerInfo({ ...customerInfo, name: e.target.value })
-                        }
-                        placeholder="Customer full name"
-                        className="mt-1"
-                      />
-                    </div>
+                  <div className="relative">
+                    <Label htmlFor="name">Full Name *</Label>
+                    <Input
+                      id="name"
+                      value={customerInfo.name}
+                      onChange={(e) => {
+                        const name = e.target.value;
+                        setCustomerInfo({ ...customerInfo, name });
+                        setShowCustomerList(true);
+                      }}
+                      placeholder="Customer full name"
+                      className="mt-1"
+                      autoComplete="off"
+                    />
+                    {showCustomerList && filteredCustomers.length > 0 && (
+                      <ul className="absolute z-10 mt-1 w-full bg-white border rounded shadow max-h-48 overflow-auto">
+                        {filteredCustomers.map((customer) => (
+                          <li
+                            key={customer.id}
+                            onClick={() => handleCustomerSelect(customer)}
+                            className="px-3 py-2 hover:bg-orange-100 cursor-pointer"
+                          >
+                            {customer.name}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+
                       {/* Customer Full Name */}
    
                     <div>
