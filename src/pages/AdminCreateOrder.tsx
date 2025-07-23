@@ -292,7 +292,7 @@ const [searchTerm, setSearchTerm] = useState("");
         paymentMethod,
         orderId: `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
         paymentStatus: paymentMethod === "cash" ? "paid" : "pending",
-        deliveryStatus: "processing",
+        deliveryStatus: "sibaPending",
         notes,
         orderDate: new Date().toISOString(),
         createdAt: new Date().toISOString(),

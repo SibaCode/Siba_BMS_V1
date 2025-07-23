@@ -60,13 +60,13 @@ const OrderPaymentSummaryCard = () => {
       color: "#10b981",
     },
     {
-      status: "Pending",
-      count: normalizedOrders.filter(o => o.paymentStatus === "pending").length,
+      status: "unpaidtoFailed",
+      count: normalizedOrders.filter(o => o.paymentStatus === "unpaidtoFailed").length,
       color: "#f59e0b",
     },
     {
-      status: "Failed",
-      count: normalizedOrders.filter(o => o.paymentStatus === "failed").length,
+      status: "sibaPending",
+      count: normalizedOrders.filter(o => o.paymentStatus === "sibaPending").length,
       color: "#ef4444",
     },
   ];

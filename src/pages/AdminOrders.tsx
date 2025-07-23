@@ -74,9 +74,9 @@ const AdminOrders = () => {
     switch (status?.toLowerCase()) {
       case "paid":
         return "default";
-      case "unpaid":
+      case "unpaidtoFailed":
         return "secondary";
-      case "processing":
+      case "sibaPending":
         return "destructive";
       default:
         return "secondary";
@@ -98,8 +98,8 @@ const AdminOrders = () => {
 
   // Calculate reports with safe fallbacks
   const paidCount = orders.filter((o) => o.paymentStatus === "paid").length;
-  const unpaidCount = orders.filter((o) => o.paymentStatus === "unpaid").length;
-  const processingCount = orders.filter((o) => o.paymentStatus === "processing").length;
+  const unpaidtoFailedCount = orders.filter((o) => o.paymentStatus === "unpaidtoFailed").length;
+  const processingCount = orders.filter((o) => o.paymentStatus === "sibaPending").length;
   
   // Delivery status counts
   const pendingDeliveryCount = orders.filter((o) => o.deliveryStatus === "pending").length;
@@ -187,11 +187,11 @@ const averageOrderValue = orders.length > 0 ? totalRevenue / orders.length : 0;
         <span className="font-bold text-green-600">{paidCount}</span>
       </div>
       <div className="flex items-center space-x-2">
-        <span>Unpaid</span>
-        <span className="font-bold text-red-600">{unpaidCount}</span>
+        <span>unpaidtoFailed</span>
+        <span className="font-bold text-red-600">{unpaidtoFailedCount}</span>
       </div>
       <div className="flex items-center space-x-2">
-        <span>Processing</span>
+        <span>sibaPending</span>
         <span className="font-bold text-amber-500">{processingCount}</span>
       </div>
     </div>
@@ -247,8 +247,8 @@ const averageOrderValue = orders.length > 0 ? totalRevenue / orders.length : 0;
             <SelectContent>
               <SelectItem value="all">All Statuses</SelectItem>
               <SelectItem value="paid">Paid</SelectItem>
-              <SelectItem value="unpaid">Unpaid</SelectItem>
-              <SelectItem value="processing">Processing</SelectItem>
+              <SelectItem value="unpaidtoFailed">unpaidtoFailed</SelectItem>
+              <SelectItem value="sibaPending">sibaPending</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -303,7 +303,7 @@ const averageOrderValue = orders.length > 0 ? totalRevenue / orders.length : 0;
                     </TableCell>
                     <TableCell>
                       <Badge variant={getDeliveryStatusBadgeVariant(order.deliveryStatus)}>
-                        {order.deliveryStatus || 'Processing'}
+                        {order.deliveryStatus || 'sibaPending'}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm">

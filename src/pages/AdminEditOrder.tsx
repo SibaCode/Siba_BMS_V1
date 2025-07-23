@@ -225,9 +225,9 @@ const AdminEditOrder = () => {
                 onChange={(e) => setPaymentStatus(e.target.value)}
                 className="w-full border rounded px-3 py-2 mt-1"
               >
-                <option value="unpaid">Unpaid</option>
+                <option value="unpaidtoFailed">unpaidtoFailed</option>
                 <option value="paid">Paid</option>
-                <option value="processing">Processing</option>
+                <option value="sibaPending">sibaPending</option>
               </select>
             </div>
 

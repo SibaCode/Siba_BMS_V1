@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -416,41 +416,64 @@ const newCustomers = customers.length
 
 
 
+  const LOW_STOCK_THRESHOLD = 5; // define what "low stock" means
+
+  // Calculate total units across all products
+  const totalUnits = products.reduce(
+    (total, product) =>
+      total +
+      product.variants.reduce((sum, variant) => sum + (variant.stockQuantity || 0), 0),
+    0
+  );
+  
+  // For each product, get units and low stock status
+  const productStockInfo = products.map(product => {
+    const units = product.variants.reduce((sum, v) => sum + (v.stockQuantity || 0), 0);
+    const hasLowStock = product.variants.some(v => (v.stockQuantity || 0) < LOW_STOCK_THRESHOLD);
+    return {
+      name: product.name,
+      units,
+      hasLowStock,
+    };
+  });
+  const paidOrdersCount = React.useMemo(() => {
+    return orders.filter(order => order.paymentStatus?.toLowerCase() === "paid").length;
+  }, [orders]);
 
 
-  // const statsCards = [
-  //   {
-  //     title: "Total Stock Items",
-  //     // value:`${totalStock}units,
-  //     value: `${totalStock} units`,
-  //     description: "of inventory",
-  //     icon: Package,
-  //     color: "from-blue-500 to-blue-600",
-  //     // change: `${lowStockCategories} categories low`
-  //   },
-  //   {
-  //     title: "Total orders",
-  //     value: `${orders.length} order `,
-  //     description: "received",
-  //     icon: CheckCircle,
-  //     color: "from-green-500 to-emerald-600",
-  //     // change: `${notDeliveredOrders} pending delivery`,
-  //     // title: "Order Summary",
-  //     // value: `${orders.length} orders`,
-  //     // description: (
-  //     //   <ul className="text-sm space-y-1">
-  //     //     <li className="text-green-600">Delivered → {deliveredOrders.length}</li>
-  //     //     <li className="text-gray-700">Not Delivered → {notDeliveredOrders}</li>
-  //     //   </ul>
-  //     // ),
-  //     // icon: Truck,
-  //     // color: "from-gray-500 to-gray-600",
-  //     // change: notDeliveredOrders > 0
-  //     //   ? `${notDeliveredOrders} pending`
-  //     //   : "All delivered",
-  //     // changeColor: notDeliveredOrders > 0 ? "text-yellow-600" : "text-green-600"
-  //   },
-  //   {
+  const statsCards = [
+    {
+      title: "Total Stock Items",
+      value: `${totalUnits} units`,
+      description: "of inventory",
+      icon: Package,
+      color: "from-blue-500 to-blue-600",
+      // For per product, we will render JSX so change to function or render inline
+      details: productStockInfo,
+    },
+    {
+      title: "Total orders",
+      value: `${orders.length} order `,
+      description: "received",
+      icon: CheckCircle,
+      color: "from-green-500 to-emerald-600",
+      // change: `${notDeliveredOrders} pending delivery`,
+      // title: "Order Summary",
+      // value: `${orders.length} orders`,
+      // description: (
+      //   <ul className="text-sm space-y-1">
+      //     <li className="text-green-600">Delivered → {deliveredOrders.length}</li>
+      //     <li className="text-gray-700">Not Delivered → {notDeliveredOrders}</li>
+      //   </ul>
+      // ),
+      // icon: Truck,
+      // color: "from-gray-500 to-gray-600",
+      // change: notDeliveredOrders > 0
+      //   ? `${notDeliveredOrders} pending`
+      //   : "All delivered",
+      // changeColor: notDeliveredOrders > 0 ? "text-yellow-600" : "text-green-600"
+    },
+    {
   //     title: "Payment Summary",
   // value: `${paidOrders} paid`,
   // description: (
@@ -466,16 +489,21 @@ const newCustomers = customers.length
   //   ? `${pendingPayments.length} processing`
   //   : "No pending payments",
   // changeColor: pendingPayments.length > 0 ? "text-yellow-600" : "text-green-600"
-  //   },
-  //   {
-  //     title: "New Customers",
-  //     value: loading ? "..." : newCustomers,
-  //     description: "Recently joined",
-  //     icon: UserPlus,
-  //     color: "from-amber-500 to-orange-600",
-  //     change: "This week"
-  //   }
-  // ];
+  title: "Paid Orders",
+  value: `${paidOrdersCount}`,
+  description: "orders paid",
+  icon: CreditCard, // or any icon you like
+  color: "from-green-500 to-green-600",
+    },
+    {
+      title: "New Customers",
+      value: loading ? "..." : newCustomers,
+      description: "Recently joined",
+      icon: UserPlus,
+      color: "from-amber-500 to-orange-600",
+      change: "This week"
+    }
+  ];
 // Payment status counts
 
   return (

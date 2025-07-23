@@ -174,7 +174,7 @@ const totalOrders = orders.length;
 const paidOrders = orders.filter(o => o.paymentStatus?.toLowerCase() === "paid");
 const pendingPayments = orders.filter(o => o.paymentStatus?.toLowerCase() === "pending");
 const failedPayments = orders.filter(o => o.paymentStatus?.toLowerCase() === "failed");
-const processingPayments = orders.filter(o => o.paymentStatus?.toLowerCase() === "processing");
+const processingPayments = orders.filter(o => o.paymentStatus?.toLowerCase() === "sibaPending");
 
 const deliveredOrders = orders.filter(
   o =>
