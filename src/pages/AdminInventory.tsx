@@ -728,27 +728,14 @@ const AdminInventory = () => {
                 
                 <CardContent>
                   <div className="space-y-3 mb-4">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Price Range:</span>
-                      <span className="font-semibold">{priceRange}</span>
-                    </div>
-                    
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Variants:</span>
-                      <span className="font-medium">{product.variants?.length || 0}</span>
-                    </div>
+                  
 
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Supplier:</span>
-                      <span className="truncate ml-2">{product.supplier}</span>
-                    </div>
-
-                    <div className="flex justify-between text-sm">
+                    {/* <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Status:</span>
                       <Badge variant={product.status === "Active" ? "default" : "secondary"} className="text-xs">
                         {product.status}
                       </Badge>
-                    </div>
+                    </div> */}
 
                     {/* Variants Preview */}
                     {product.variants && product.variants.length > 0 && (
@@ -793,6 +780,7 @@ const AdminInventory = () => {
                     </Button>
                     <Button 
                       variant="destructive" 
+                      disabled
                       onClick={() => deleteProduct(product)} 
                       size="sm"
                     >

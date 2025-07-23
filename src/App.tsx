@@ -24,7 +24,7 @@ import Checkout from "./pages/Checkout";
 import OrderSuccess from "./pages/OrderSuccess";
 import { AdminLayout } from "./components/AdminLayout";
 import AdminCreateOrder from "./pages/AdminCreateOrder";
-// import SeedCustomers from "./pages/components/SeedCustomers";
+import EditOrderPage from "./pages/components/EditOrderPage";
 
 const queryClient = new QueryClient();
 
@@ -95,6 +95,8 @@ const App = () => (
             <Route path="/store/checkout" element={<Checkout />} />
             <Route path="/store/success" element={<OrderSuccess />} />
             <Route path="/admin/orders/create" element={<AdminCreateOrder />} />
+            <Route path="/admin/orders/edit/:id" element={<EditOrderPage />} />
+
 
             {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />

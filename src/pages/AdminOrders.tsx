@@ -7,8 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { db } from "@/firebase"; // your Firebase config
+import OrderEditModal from "./components/OrderEditModal";
 import { collection, getDocs } from "firebase/firestore";
-
+import { useNavigate } from "react-router-dom";
+import { Pencil } from "lucide-react";
 import { 
   ArrowLeft, 
   Search, 
@@ -27,7 +29,19 @@ const AdminOrders = () => {
   // Mock data - in real app this would come from backend
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const openModal = (order) => {
+    setSelectedOrder(order);
+    setModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setSelectedOrder(null);
+    setModalOpen(false);
+  };
   useEffect(() => {
     const fetchOrders = async () => {
       try {
@@ -261,9 +275,18 @@ const AdminOrders = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
-                        <Button variant="outline" size="sm">
+                        {/* <Button variant="outline" size="sm">
                           <Eye className="h-4 w-4" />
                         </Button>
+                         */}
+                          <button
+                          onClick={() => navigate(`/admin/orders/edit/${order.id}`)}
+                          className="inline-flex items-center space-x-1 text-blue-600 hover:underline px-2 py-1 border border-blue-600 rounded text-sm"
+                          type="button"
+                        >
+                          <Pencil className="w-4 h-4" />
+                          <span>Edit ${order.id}</span>
+                        </button>
                         <Button variant="outline" size="sm" asChild>
                           <Link to={`/admin/invoice/${order.id}`}>
                             <FileText className="h-4 w-4" />
