@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { collection, getDocs, addDoc } from "firebase/firestore";
 import { db } from "@/firebase";
 import { motion } from "framer-motion";
+import { updateDoc, doc, getDoc ,arrayUnion, arrayRemove } from "firebase/firestore";
+
 import { toast } from "@/hooks/use-toast";
 import {
   ArrowLeft,
@@ -136,6 +138,7 @@ const AdminCreateOrder = () => {
       });
     }
   };
+  
   const handleCustomerSelect = (customer: CustomerInfo) => {
     setCustomerInfo({
       name: customer.name,
@@ -240,16 +243,51 @@ const AdminCreateOrder = () => {
     return true;
   };
 
+  const decreaseStockForOrder = async (orderItems: typeof orderItems) => {
+    for (const item of orderItems) {
+      const productRef = doc(db, "products", item.productId);
+      const productSnap = await getDoc(productRef);
+  
+      if (!productSnap.exists()) {
+        console.warn(`Product ${item.productId} not found`);
+        continue;
+      }
+  
+      const productData = productSnap.data();
+      const variants = productData.variants;
+  
+      if (!variants || !variants[item.variantIndex]) {
+        console.warn(`Variant index ${item.variantIndex} not found for product ${item.productId}`);
+        continue;
+      }
+  
+      const variant = variants[item.variantIndex];
+      const newStockQuantity = variant.stockQuantity - item.quantity;
+  
+      if (newStockQuantity < 0) {
+        console.warn(`Insufficient stock for product ${item.productId} variant index ${item.variantIndex}`);
+        // You can throw error or handle this gracefully
+        continue;
+      }
+  
+      variants[item.variantIndex] = {
+        ...variant,
+        stockQuantity: newStockQuantity,
+      };
+  
+      await updateDoc(productRef, { variants });
+    }
+  };
+  
   const createOrder = async () => {
     if (!validateForm()) return;
   
     setSubmitting(true);
     try {
-      // Exclude `id` from customerInfo before saving
       const { id, ...customerInfoWithoutId } = customerInfo;
   
       const orderData = {
-        customerInfo: customerInfoWithoutId, // no id field here
+        customerInfo: customerInfoWithoutId,
         items: orderItems,
         subtotal: calculateSubtotal(),
         tax: calculateTax(),
@@ -263,7 +301,10 @@ const AdminCreateOrder = () => {
         createdBy: "admin",
       };
   
-      await addDoc(collection(db, "orders"), orderData);
+      const orderDocRef = await addDoc(collection(db, "orders"), orderData);
+  
+      // Decrease stock for ordered items after successful order creation
+      await decreaseStockForOrder(orderItems);
   
       toast({
         title: "Success",
@@ -282,6 +323,8 @@ const AdminCreateOrder = () => {
       setSubmitting(false);
     }
   };
+  
+  
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-orange-100/50">

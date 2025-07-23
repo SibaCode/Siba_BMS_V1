@@ -193,7 +193,7 @@ console.log(invoice)
 
             {/* Customer */}
             <div className="mb-8">
-                <h3 className="font-semibold mb-2">Billed ToH:</h3>
+                <h3 className="font-semibold mb-2">Billed To:</h3>
                 <div className="bg-muted p-4 rounded">
                   <p className="font-medium">{invoice.customerInfo?.name || "N/A"}</p>
                   <p className="text-sm text-muted-foreground">
@@ -219,13 +219,20 @@ console.log(invoice)
                 </thead>
                 <tbody>
                   {invoice.items?.map((item, index) => (
-                    <tr key={index} className="border-t">
-                      <td className="p-2 border">{item.productName}</td>
-                      <td className="text-center p-2 border">{item.quantity}</td>
-                      <td className="text-right p-2 border">R{formatCurrency(item.price)}</td>
-                      <td className="text-right p-2 border">R{formatCurrency(item.total)}</td>
-                    </tr>
-                  ))}
+                  <tr key={index} className="border-t">
+                    <td className="p-2 border">
+                      <div className="font-medium">{item.productName}</div>
+                      <div className="text-sm text-muted-foreground">
+                     <p>  {item.variant?.type} -  {item.variant?.color}</p>
+                     <p> {item.variant?.size}</p>
+                      </div>
+                    </td>
+                    <td className="text-center p-2 border">{item.quantity}</td>
+                    <td className="text-right p-2 border">R{formatCurrency(item.price)}</td>
+                    <td className="text-right p-2 border">R{formatCurrency(item.total)}</td>
+                  </tr>
+                ))}
+
                 </tbody>
               </table>
             </div>
