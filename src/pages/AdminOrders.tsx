@@ -222,7 +222,7 @@ const AdminOrders = () => {
               <TableBody>
                 {filteredOrders.map((order) => (
                   <TableRow key={order.id}>
-                    <TableCell className="font-medium">{order.id || 'N/A'}</TableCell>
+                    <TableCell className="font-medium">{order.orderId || 'N/A'}</TableCell>
                     <TableCell>
                       <div>
                         <div className="font-medium">{order.customerInfo?.name || `${order.customer?.firstName || ''} ${order.customer?.lastName || ''}`.trim() || 'N/A'}

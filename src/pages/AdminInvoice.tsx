@@ -12,11 +12,25 @@ import html2canvas from "html2canvas";
 import { useBusinessInfo } from "@/pages/components/BusinessInfoContext";
 import { collection, getDocs } from "firebase/firestore";
 
+interface Variant {
+  images: string[];
+  type: string;
+  sellingPrice: number;
+  color: string;
+  description: string;
+  stockPrice: number;
+  size: string;
+  stockQuantity: number;
+}
+
 interface InvoiceItem {
   quantity: number;
   price: number;
   total: number;
-  productName:string;
+  productName: string;
+  productId?: string;
+  variantIndex?: number;
+  variant?: Variant; // ✅ Add this to match actual data
 }
 
 interface CustomerInfo {
@@ -25,9 +39,8 @@ interface CustomerInfo {
   address: string;
   phone: string;
   email: string;
-  firstName:string;
-  createdAt:string;
-
+  firstName: string;
+  createdAt: string;
 }
 
 interface InvoiceData {
@@ -41,9 +54,8 @@ interface InvoiceData {
   total: number;
   paymentMethod: string;
   paymentStatus: string;
-  createdAt:string;
-  deliveryStatus:string;
-
+  createdAt: string;
+  deliveryStatus: string;
 }
 
 const AdminInvoice = () => {
