@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { collection, getDocs, addDoc } from "firebase/firestore";
 import { db } from "@/firebase";
 import { motion } from "framer-motion";
-import { updateDoc, doc, getDoc ,arrayUnion, arrayRemove } from "firebase/firestore";
+import { updateDoc, doc ,getDoc,arrayUnion, arrayRemove } from "firebase/firestore";
 
 import { toast } from "@/hooks/use-toast";
 import {
@@ -94,7 +94,9 @@ const AdminCreateOrder = () => {
   const [courierDetails, setCourierDetails] = useState("");
   const [showCustomerList, setShowCustomerList] = useState(false);
   const [allCustomers, setAllCustomers] = useState<(CustomerInfo & {id: string})[]>([]); 
-  
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+const [searchTerm, setSearchTerm] = useState("");
+
   useEffect(() => {
     fetchProducts();
     fetchCustomers();
@@ -189,18 +191,7 @@ const AdminCreateOrder = () => {
     }
   };
 
-  const updateQuantity = (itemIndex: number, newQuantity: number) => {
-    if (newQuantity <= 0) {
-      removeItem(itemIndex);
-      return;
-    }
-
-    const updatedItems = [...orderItems];
-    updatedItems[itemIndex].quantity = newQuantity;
-    updatedItems[itemIndex].total = updatedItems[itemIndex].price * newQuantity;
-    setOrderItems(updatedItems);
-  };
-
+ 
   const removeItem = (itemIndex: number) => {
     setOrderItems(orderItems.filter((_, index) => index !== itemIndex));
   };
@@ -243,44 +234,51 @@ const AdminCreateOrder = () => {
     return true;
   };
 
-  const decreaseStockForOrder = async (orderItems: typeof orderItems) => {
+  const decreaseStockForOrder = async (orderItems: OrderItem[]) => {
     for (const item of orderItems) {
-      const productRef = doc(db, "products", item.productId);
-      const productSnap = await getDoc(productRef);
+      try {
+        const productRef = doc(db, "products", item.productId);
+        const productSnap = await getDoc(productRef);
   
-      if (!productSnap.exists()) {
-        console.warn(`Product ${item.productId} not found`);
-        continue;
+        if (!productSnap.exists()) {
+          console.warn(`Product ${item.productId} not found.`);
+          continue;
+        }
+  
+        const productData = productSnap.data() as Product;
+  
+        const updatedVariants = productData.variants.map((variant, idx) => {
+          if (idx === item.variantIndex) {
+            const newQuantity = variant.stockQuantity - item.quantity;
+            return {
+              ...variant,
+              stockQuantity: newQuantity < 0 ? 0 : newQuantity,
+            };
+          }
+          return variant;
+        });
+  
+        await updateDoc(productRef, { variants: updatedVariants });
+  
+      } catch (err) {
+        console.error(`Error updating stock for ${item.productName}:`, err);
       }
-  
-      const productData = productSnap.data();
-      const variants = productData.variants;
-  
-      if (!variants || !variants[item.variantIndex]) {
-        console.warn(`Variant index ${item.variantIndex} not found for product ${item.productId}`);
-        continue;
-      }
-  
-      const variant = variants[item.variantIndex];
-      const newStockQuantity = variant.stockQuantity - item.quantity;
-  
-      if (newStockQuantity < 0) {
-        console.warn(`Insufficient stock for product ${item.productId} variant index ${item.variantIndex}`);
-        // You can throw error or handle this gracefully
-        continue;
-      }
-  
-      variants[item.variantIndex] = {
-        ...variant,
-        stockQuantity: newStockQuantity,
-      };
-  
-      await updateDoc(productRef, { variants });
     }
   };
-  
   const createOrder = async () => {
     if (!validateForm()) return;
+  
+    // Final stock check before submitting
+    for (const item of orderItems) {
+      if (item.quantity > item.variant.stockQuantity) {
+        toast({
+          title: "Stock error",
+          description: `Insufficient stock for ${item.productName} (${item.variant.color}, ${item.variant.size})`,
+          variant: "destructive",
+        });
+        return; // Stop order creation if stock is insufficient
+      }
+    }
   
     setSubmitting(true);
     try {
@@ -326,6 +324,28 @@ const AdminCreateOrder = () => {
   };
   
   
+  const updateQuantity = (index: number, newQuantity: number) => {
+    if (newQuantity < 1) return; // no zero or negative qty
+  
+    const item = orderItems[index];
+    if (newQuantity > item.variant.stockQuantity) {
+      toast({
+        title: "Stock limit reached",
+        description: `Only ${item.variant.stockQuantity} units available for ${item.productName} (${item.variant.color}, ${item.variant.size})`,
+        variant: "destructive",
+      });
+      return; // prevent update
+    }
+  
+    const updatedItems = [...orderItems];
+    updatedItems[index] = {
+      ...item,
+      quantity: newQuantity,
+      total: item.price * newQuantity,
+    };
+    setOrderItems(updatedItems);
+  };
+  
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-orange-100/50">
@@ -364,60 +384,7 @@ const AdminCreateOrder = () => {
                 </CardHeader>
                 <CardContent className="p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* <div className="relative">
-                    <Label htmlFor="name">Full Name *</Label>
-                    <Input
-                      id="name"
-                      value={customerInfo.name}
-                      onChange={(e) => {
-                        const name = e.target.value;
-                        setCustomerInfo({ ...customerInfo, name });
-                        setShowCustomerList(true);
-                      }}
-                      placeholder="Customer full name"
-                      className="mt-1"
-                      autoComplete="off"
-                    />
-                    {showCustomerList && filteredCustomers.length > 0 && (
-                      <ul className="absolute z-10 mt-1 w-full bg-white border rounded shadow max-h-48 overflow-auto">
-                        {filteredCustomers.map((customer) => (
-                          <li
-                            key={customer.id}
-                            onClick={() => handleCustomerSelect(customer)}
-                            className="px-3 py-2 hover:bg-orange-100 cursor-pointer"
-                          >
-                            {customer.name}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div> */}
-                    {/* <div className="mb-4">
-                      <Label htmlFor="selectCustomer">Customer</Label>
-                      <select
-                      id="selectCustomer"
-                      className="mt-1 w-full border rounded px-3 py-2"
-                      onChange={(e) => {
-                        const selectedId = e.target.value;
-                        if (selectedId === "new") {
-                          setCustomerInfo(emptyCustomer); // New customer selected
-                        } else {
-                          const selected = allCustomers.find((c) => c.id === selectedId);
-                          if (selected) setCustomerInfo(selected); // Existing customer
-                        }
-                      }}
-                      value={customerInfo.id ?? "new"}
-                    >
-                      <option value="new">➕ New Customer</option>
-                      {allCustomers.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name} ({c.phone})
-                        </option>
-                      ))}
-                    </select>
-
-
-                    </div> */}
+                 
 {/* Select customer dropdown */}
 <div className="mb-4">
   <Label htmlFor="selectCustomer">Customer</Label>
@@ -507,57 +474,112 @@ const AdminCreateOrder = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.1 }}
             >
-              <Card className="shadow-lg border-0 bg-white/70 backdrop-blur-sm">
-                <CardHeader className="bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-t-lg">
-                  <CardTitle className="flex items-center space-x-2">
-                    <Package className="h-5 w-5" />
-                    <span>Products</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-6">
-                  {loading ? (
-                    <p>Loading products...</p>
-                  ) : products.length === 0 ? (
-                    <p>No products found.</p>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[350px] overflow-y-auto">
-                      {products.map((product) =>
-                        product.variants.map((variant, index) => (
-                          <motion.div
-                            key={`${product.docId}-${index}`}
-                            className="border rounded-lg p-4 bg-white cursor-pointer hover:shadow-lg transition-shadow flex flex-col justify-between"
-                            onClick={() => addProductToOrder(product, index)}
-                            whileHover={{ scale: 1.03 }}
+             <Card className="shadow-lg border-0 bg-white/70 backdrop-blur-sm">
+  <CardHeader className="bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-t-lg">
+    <CardTitle className="flex items-center space-x-2">
+      <Package className="h-5 w-5" />
+      <span>Products</span>
+    </CardTitle>
+  </CardHeader>
+
+  <CardContent className="p-4">
+    {loading ? (
+      <p>Loading products...</p>
+    ) : products.length === 0 ? (
+      <p>No products found.</p>
+    ) : (
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-h-[500px] overflow-hidden">
+        {/* Left: Search + Product List */}
+        <div className="col-span-1 border-r pr-2 overflow-y-auto">
+          <input
+            type="text"
+            placeholder="Search products..."
+            className="w-full mb-2 px-3 py-2 border rounded"
+            onChange={(e) => setSearchTerm(e.target.value.toLowerCase())}
+          />
+
+          <ul className="space-y-2">
+            {products
+              .filter((p) =>
+                p.name.toLowerCase().includes(searchTerm || "")
+              )
+              .map((product, i) => (
+                <li
+                  key={product.docId}
+                  className={`p-2 rounded cursor-pointer hover:bg-orange-100 transition ${
+                    selectedProduct?.docId === product.docId ? "bg-orange-200" : ""
+                  }`}
+                  onClick={() => setSelectedProduct(product)}
+                >
+                  <div className="flex items-center space-x-2">
+                    <img
+                      src={product.productImage}
+                      alt={product.name}
+                      className="w-10 h-10 object-cover rounded"
+                    />
+                    <span className="text-sm">{product.name}</span>
+                  </div>
+                </li>
+              ))}
+          </ul>
+        </div>
+
+        {/* Right: Selected Product's Variants */}
+        <div className="col-span-2 overflow-y-auto px-2">
+          {selectedProduct ? (
+            <>
+              <h3 className="text-lg font-semibold mb-2">
+                {selectedProduct.name}
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {selectedProduct.variants.map((variant, index) => {
+                  const isOutOfStock = variant.stockQuantity === 0;
+                  return (
+                    <div
+                      key={`${selectedProduct.docId}-${index}`}
+                      className={`p-4 border rounded-lg bg-white shadow-sm transition ${
+                        isOutOfStock ? "opacity-50 cursor-not-allowed" : "hover:shadow-md"
+                      }`}
+                      onClick={() =>
+                        !isOutOfStock && addProductToOrder(selectedProduct, index)
+                      }
+                    >
+                      <div className="flex items-center space-x-4">
+                        <img
+                          src={variant.images[0] || selectedProduct.productImage}
+                          alt={variant.type}
+                          className="w-16 h-16 object-cover rounded"
+                        />
+                        <div className="flex flex-col">
+                          <p className="font-medium text-sm">{variant.type}</p>
+                          <p className="text-xs text-gray-500">
+                            Color: {variant.color} | Size: {variant.size}
+                          </p>
+                          <p className="font-bold text-orange-600 text-md">
+                            R{variant.sellingPrice.toFixed(2)}
+                          </p>
+                          <Badge
+                            variant={isOutOfStock ? "destructive" : "default"}
+                            className="w-max text-xs mt-1"
                           >
-                            <div className="flex items-center space-x-4">
-                              <img
-                                src={variant.images[0] || product.productImage}
-                                alt={product.name}
-                                className="w-20 h-20 object-cover rounded-md"
-                              />
-                              <div>
-                                <h3 className="font-semibold">{product.name}</h3>
-                                <p className="text-sm text-muted-foreground">
-                                  Type: {variant.type}, Color: {variant.color}, Size: {variant.size}
-                                </p>
-                                <p className="text-orange-600 font-bold mt-1">
-                                  R{variant.sellingPrice.toFixed(2)}
-                                </p>
-                              </div>
-                            </div>
-                            <Badge
-                              variant={variant.stockQuantity > 0 ? "default" : "destructive"}
-                              className="mt-3 text-xs"
-                            >
-                              {variant.stockQuantity > 0 ? "In Stock" : "Out of Stock"}
-                            </Badge>
-                          </motion.div>
-                        ))
-                      )}
+                            {isOutOfStock ? "Out of Stock" : `${variant.stockQuantity} in stock`}
+                          </Badge>
+                        </div>
+                      </div>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <p className="text-gray-500">Select a product to view variants.</p>
+          )}
+        </div>
+      </div>
+    )}
+  </CardContent>
+</Card>
+
             </motion.div>
           </div>
 
