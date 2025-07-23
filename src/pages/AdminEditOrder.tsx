@@ -16,6 +16,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { arrayUnion, arrayRemove } from "firebase/firestore";
+import { Label } from "@/components/ui/label";
+
 import {
   ArrowLeft,
   Plus,
@@ -25,6 +27,50 @@ import {
   Package,
   Trash2,
 } from "lucide-react";
+interface Product {
+  docId: string;
+  productID: string;
+  name: string;
+  category: string;
+  productImage: string;
+  variants: Variant[];
+}
+
+interface Variant {
+  type: string;
+  color: string;
+  size: string;
+  sellingPrice: number;
+  stockQuantity: number;
+  description: string;
+  images: string[];
+}
+
+interface OrderItem {
+  productId: string;
+  productName: string;
+  variantIndex: number;
+  variant: Variant;
+  quantity: number;
+  price: number;
+  total: number;
+}
+
+interface CustomerInfo {
+  id?:string;
+  name: string;
+  email: string;
+  phone: string;
+  location: string;
+  notes: string;
+  preferredContactMethod:string;
+  referredBy:string;
+  status: string;            
+  joinDate: string;  
+  totalOrders:number;
+  totalSpent: number;
+
+}
 const AdminEditOrder = () => {
   const { id } = useParams(); // order ID from URL
   const navigate = useNavigate();
@@ -33,7 +79,10 @@ const AdminEditOrder = () => {
   const [allCustomers, setAllCustomers] = useState<any[]>([]);
   const [notes, setNotes] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
+  const [paymentStatus, setPaymentStatus] = useState("");
+
   const [deliveryStatus, setDeliveryStatus] = useState("");
+  const [products, setProducts] = useState<Product[]>([]);
 
   useEffect(() => {
     if (id) {
@@ -52,6 +101,8 @@ const AdminEditOrder = () => {
         setOrder(orderData);
         setNotes(orderData.notes || "");
         setPaymentMethod(orderData.paymentMethod || "");
+        setPaymentStatus(orderData.paymentStatus || "");
+
         setDeliveryStatus(orderData.deliveryStatus || "");
       } else {
         toast({
@@ -93,6 +144,7 @@ const AdminEditOrder = () => {
         notes,
         paymentMethod,
         deliveryStatus,
+        paymentStatus,
       });
 
       toast({
@@ -117,7 +169,8 @@ const AdminEditOrder = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-orange-100/50">
-         <div className="border-b bg-white shadow-sm">
+      {/* Header */}
+      <div className="border-b bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
@@ -127,50 +180,98 @@ const AdminEditOrder = () => {
                 </Link>
               </Button>
               <ShoppingCart className="h-8 w-8 text-primary" />
-              <h1 className="text-2xl font-bold text-foreground">Edit New </h1>
+              <h1 className="text-2xl font-bold text-foreground">Edit Order</h1>
             </div>
           </div>
         </div>
       </div>
+  
+      {/* Main Content */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <Card className="shadow-lg border-0 bg-white/70 backdrop-blur-sm">
+            <CardHeader className="bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-t-lg">
+              <CardTitle className="text-lg">Order Details</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
+              {/* Customer Info */}
+              <div>
+                <Label>Customer Name</Label>
+                <Input value={order.customerInfo?.name || ""} disabled className="mt-1" />
+              </div>
+  
+              {/* Payment Method */}
+              <div className="mb-4">
+              <label className="block mb-1">Payment Method</label>
+              <select
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+                className="w-full border rounded p-2"
+              >
+                <option value="">Select Payment Method</option>
+                <option value="cash">Cash</option>
+                <option value="card">Card</option>
+                <option value="transfer">Bank Transfer</option>
+              </select>
+            </div>
+            <div>
+              <Label>Payment Status</Label>
+              <select
+                value={paymentStatus}
+                onChange={(e) => setPaymentStatus(e.target.value)}
+                className="w-full border rounded px-3 py-2 mt-1"
+              >
+                <option value="unpaid">Unpaid</option>
+                <option value="paid">Paid</option>
+                <option value="refunded">Refunded</option>
+                <option value="partial">Partial Payment</option>
+              </select>
+            </div>
 
+            <div className="mb-4">
+              <label className="block mb-1">Delivery Status</label>
+              <select
+                value={deliveryStatus}
+                onChange={(e) => setDeliveryStatus(e.target.value)}
+                className="w-full border rounded p-2"
+              >
+                <option value="">Select Delivery Status</option>
+                <option value="pending">Pending</option>
+                <option value="in_transit">In Transit</option>
+                <option value="delivered">Delivered</option>
+              </select>
+            </div>
+
+  
+              {/* Notes */}
+              <div>
+                <Label>Notes</Label>
+                <Textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Any notes related to the order..."
+                  rows={4}
+                  className="mt-1"
+                />
+              </div>
+  
+              {/* Submit Button */}
+              <div className="pt-4">
+                <Button onClick={handleUpdateOrder} className="w-full">
+                  Update Order
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
     </div>
-    // <div className="max-w-3xl mx-auto mt-8 p-4 bg-white shadow rounded">
-    //   <h2 className="text-xl font-semibold mb-4">Edit Order</h2>
-
-    //   <div className="mb-4">
-    //     <label className="block mb-1">Customer Name</label>
-    //     <Input value={order.customerInfo?.name || ""} disabled />
-    //   </div>
-
-    //   <div className="mb-4">
-    //     <label className="block mb-1">Payment Method</label>
-    //     <Input
-    //       value={paymentMethod}
-    //       onChange={(e) => setPaymentMethod(e.target.value)}
-    //     />
-    //   </div>
-
-    //   <div className="mb-4">
-    //     <label className="block mb-1">Delivery Status</label>
-    //     <Input
-    //       value={deliveryStatus}
-    //       onChange={(e) => setDeliveryStatus(e.target.value)}
-    //     />
-    //   </div>
-
-    //   <div className="mb-4">
-    //     <label className="block mb-1">Notes</label>
-    //     <textarea
-    //       className="w-full border rounded p-2"
-    //       rows={4}
-    //       value={notes}
-    //       onChange={(e) => setNotes(e.target.value)}
-    //     />
-    //   </div>
-
-    //   <Button onClick={handleUpdateOrder}>Update Order</Button>
-    // </div>
   );
+  
 };
 
 export default AdminEditOrder;

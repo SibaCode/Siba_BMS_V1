@@ -279,17 +279,12 @@ const AdminOrders = () => {
                           <Eye className="h-4 w-4" />
                         </Button>
                          */}
-                          <button
-                          onClick={() => navigate(`/admin/orders/edit/${order.id}`)}
-                          className="inline-flex items-center space-x-1 text-blue-600 hover:underline px-2 py-1 border border-blue-600 rounded text-sm"
-                          type="button"
-                        >
-                          <Pencil className="w-4 h-4" />
-                          <span>Edit ${order.id}</span>
-                        </button>
+                        <Button variant="outline" size="sm"  onClick={() => navigate(`/admin/orders/edit/${order.id}`)}>
+                            <FileText className="h-4 w-4" /> Edit
+                        </Button>
                         <Button variant="outline" size="sm" asChild>
                           <Link to={`/admin/invoice/${order.id}`}>
-                            <FileText className="h-4 w-4" />
+                            <FileText className="h-4 w-4" /> Download Invoice
                           </Link>
                         </Button>
                       </div>
