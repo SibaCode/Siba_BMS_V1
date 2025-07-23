@@ -227,8 +227,7 @@ const AdminEditOrder = () => {
               >
                 <option value="unpaid">Unpaid</option>
                 <option value="paid">Paid</option>
-                <option value="refunded">Refunded</option>
-                <option value="partial">Partial Payment</option>
+                <option value="processing">Processing</option>
               </select>
             </div>
 

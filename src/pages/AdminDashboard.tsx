@@ -418,64 +418,65 @@ const newCustomers = customers.length
 
 
 
-  const statsCards = [
-    {
-      title: "Total Stock Items",
-      // value:`${totalStock}units,
-      value: `${totalStock} units`,
-      description: "of inventory",
-      icon: Package,
-      color: "from-blue-500 to-blue-600",
-      // change: `${lowStockCategories} categories low`
-    },
-    {
-      title: "Total orders",
-      value: `${orders.length} order `,
-      description: "received",
-      icon: CheckCircle,
-      color: "from-green-500 to-emerald-600",
-      // change: `${notDeliveredOrders} pending delivery`,
-      // title: "Order Summary",
-      // value: `${orders.length} orders`,
-      // description: (
-      //   <ul className="text-sm space-y-1">
-      //     <li className="text-green-600">Delivered → {deliveredOrders.length}</li>
-      //     <li className="text-gray-700">Not Delivered → {notDeliveredOrders}</li>
-      //   </ul>
-      // ),
-      // icon: Truck,
-      // color: "from-gray-500 to-gray-600",
-      // change: notDeliveredOrders > 0
-      //   ? `${notDeliveredOrders} pending`
-      //   : "All delivered",
-      // changeColor: notDeliveredOrders > 0 ? "text-yellow-600" : "text-green-600"
-    },
-    {
-      title: "Payment Summary",
-  value: `${paidOrders} paid`,
-  description: (
-    <ul className="text-sm space-y-1">
-      {/* <li className="text-yellow-600">Pending → {pendingPayments.length}</li> */}
-      <li className="text-red-600">Failed → {failedPayments.length}</li>
-      <li className="text-blue-600">Processing → {processingPayments.length}</li>
-    </ul>
-  ),
-  icon: CreditCard,
-  color: "from-yellow-500 to-yellow-600",
-  change: pendingPayments.length > 0
-    ? `${pendingPayments.length} processing`
-    : "No pending payments",
-  changeColor: pendingPayments.length > 0 ? "text-yellow-600" : "text-green-600"
-    },
-    {
-      title: "New Customers",
-      value: loading ? "..." : newCustomers,
-      description: "Recently joined",
-      icon: UserPlus,
-      color: "from-amber-500 to-orange-600",
-      change: "This week"
-    }
-  ];
+  // const statsCards = [
+  //   {
+  //     title: "Total Stock Items",
+  //     // value:`${totalStock}units,
+  //     value: `${totalStock} units`,
+  //     description: "of inventory",
+  //     icon: Package,
+  //     color: "from-blue-500 to-blue-600",
+  //     // change: `${lowStockCategories} categories low`
+  //   },
+  //   {
+  //     title: "Total orders",
+  //     value: `${orders.length} order `,
+  //     description: "received",
+  //     icon: CheckCircle,
+  //     color: "from-green-500 to-emerald-600",
+  //     // change: `${notDeliveredOrders} pending delivery`,
+  //     // title: "Order Summary",
+  //     // value: `${orders.length} orders`,
+  //     // description: (
+  //     //   <ul className="text-sm space-y-1">
+  //     //     <li className="text-green-600">Delivered → {deliveredOrders.length}</li>
+  //     //     <li className="text-gray-700">Not Delivered → {notDeliveredOrders}</li>
+  //     //   </ul>
+  //     // ),
+  //     // icon: Truck,
+  //     // color: "from-gray-500 to-gray-600",
+  //     // change: notDeliveredOrders > 0
+  //     //   ? `${notDeliveredOrders} pending`
+  //     //   : "All delivered",
+  //     // changeColor: notDeliveredOrders > 0 ? "text-yellow-600" : "text-green-600"
+  //   },
+  //   {
+  //     title: "Payment Summary",
+  // value: `${paidOrders} paid`,
+  // description: (
+  //   <ul className="text-sm space-y-1">
+  //     {/* <li className="text-yellow-600">Pending → {pendingPayments.length}</li> */}
+  //     <li className="text-red-600">Failed → {failedPayments.length}</li>
+  //     <li className="text-blue-600">Processing → {processingPayments.length}</li>
+  //   </ul>
+  // ),
+  // icon: CreditCard,
+  // color: "from-yellow-500 to-yellow-600",
+  // change: pendingPayments.length > 0
+  //   ? `${pendingPayments.length} processing`
+  //   : "No pending payments",
+  // changeColor: pendingPayments.length > 0 ? "text-yellow-600" : "text-green-600"
+  //   },
+  //   {
+  //     title: "New Customers",
+  //     value: loading ? "..." : newCustomers,
+  //     description: "Recently joined",
+  //     icon: UserPlus,
+  //     color: "from-amber-500 to-orange-600",
+  //     change: "This week"
+  //   }
+  // ];
+// Payment status counts
 
   return (
     <motion.div 
