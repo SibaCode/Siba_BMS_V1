@@ -13,10 +13,10 @@ import { useBusinessInfo } from "@/pages/components/BusinessInfoContext";
 import { collection, getDocs } from "firebase/firestore";
 
 interface InvoiceItem {
-  name: string;
   quantity: number;
   price: number;
   total: number;
+  productName:string;
 }
 
 interface CustomerInfo {
@@ -35,7 +35,7 @@ interface InvoiceData {
   invoiceNumber: string;
   orderDate: string;
   dueDate: string;
-  customer: CustomerInfo;
+  customerInfo: CustomerInfo;
   items: InvoiceItem[];
   subtotal: number;
   total: number;
@@ -193,14 +193,17 @@ console.log(invoice)
 
             {/* Customer */}
             <div className="mb-8">
-              <h3 className="font-semibold mb-2">Billed To:</h3>
-              <div className="bg-muted p-4 rounded">
-                <p className="font-medium">{invoice.customer?.firstName || "N/A"}</p>
-                <p className="text-sm text-muted-foreground">{invoice.customer?.address || "N/A"}</p>
-                <p className="text-sm">{invoice.customer?.phone || "N/A"}</p>
-                <p className="text-sm">{invoice.customer?.email || "N/A"}</p>
+                <h3 className="font-semibold mb-2">Billed ToH:</h3>
+                <div className="bg-muted p-4 rounded">
+                  <p className="font-medium">{invoice.customerInfo?.name || "N/A"}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {invoice.customerInfo?.address || "N/A"}
+                  </p>
+                  <p className="text-sm">{invoice.customerInfo?.phone || "N/A"}</p>
+                  <p className="text-sm">{invoice.customerInfo?.email || "N/A"}</p>
+                </div>
               </div>
-            </div>
+
 
             {/* Items Table */}
             <div className="mb-8">
@@ -217,7 +220,7 @@ console.log(invoice)
                 <tbody>
                   {invoice.items?.map((item, index) => (
                     <tr key={index} className="border-t">
-                      <td className="p-2 border">{item.name}</td>
+                      <td className="p-2 border">{item.productName}</td>
                       <td className="text-center p-2 border">{item.quantity}</td>
                       <td className="text-right p-2 border">R{formatCurrency(item.price)}</td>
                       <td className="text-right p-2 border">R{formatCurrency(item.total)}</td>
