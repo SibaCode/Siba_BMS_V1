@@ -51,47 +51,47 @@ interface OrderItem {
 }
 
 interface CustomerInfo {
+  id?:string;
   name: string;
   email: string;
   phone: string;
-  address: string;
-  city: string;
-  postalCode: string;
-}
+  location: string;
+  notes: string;
+  preferredContactMethod:string;
+  referredBy:string;
+  status: string;            
+  joinDate: string;  
+  totalOrders:number;
+  totalSpent: number;
 
-const mockCustomers = [
-  { id: "1", name: "Alice Johnson" },
-  { id: "2", name: "Bob Smith" },
-];
+}
+const emptyCustomer: CustomerInfo = {
+  id: undefined,
+  name: "",
+  email: "",
+  phone: "",
+  location: "",
+  notes: "",
+  preferredContactMethod: "",
+  referredBy: "",
+  status: "active",
+  joinDate: new Date().toISOString().split("T")[0],
+  totalOrders: 0,
+  totalSpent: 0,
+};
 const AdminCreateOrder = () => {
   const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
-  const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
-    name: "",
-    email: "",
-    phone: "",
-    address: "",
-    city: "",
-    postalCode: "",
-  });
+  const [customerInfo, setCustomerInfo] = useState<CustomerInfo>(emptyCustomer);
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [deliveryMethod, setDeliveryMethod] = useState("collect");
   const [courierDetails, setCourierDetails] = useState("");
   const [showCustomerList, setShowCustomerList] = useState(false);
-  const [allCustomers, setAllCustomers] = useState<CustomerInfo[]>([]);
-  interface CustomerInfo {
-    id?: string;
-    name: string;
-    email: string;
-    phone: string;
-    address: string;
-    city: string;
-    postalCode: string;
-  }
+  const [allCustomers, setAllCustomers] = useState<(CustomerInfo & {id: string})[]>([]); 
   
   useEffect(() => {
     fetchProducts();
@@ -141,9 +141,14 @@ const AdminCreateOrder = () => {
       name: customer.name,
       phone: customer.phone,
       email: customer.email || "",
-      address: customer.address || "",
-      city: customer.city || "",
-      postalCode: customer.postalCode || "",
+      location: customer.location || "",
+      notes: customer.notes || "",
+      preferredContactMethod: customer.preferredContactMethod || "",
+      referredBy: customer.referredBy || "",
+      status: customer.status || "active",
+      joinDate: customer.joinDate || new Date().toISOString().split("T")[0],
+      totalOrders: customer.totalOrders ?? 0,
+      totalSpent: customer.totalSpent ?? 0,
     });
     setShowCustomerList(false);
   };
@@ -237,11 +242,14 @@ const AdminCreateOrder = () => {
 
   const createOrder = async () => {
     if (!validateForm()) return;
-
+  
     setSubmitting(true);
     try {
+      // Exclude `id` from customerInfo before saving
+      const { id, ...customerInfoWithoutId } = customerInfo;
+  
       const orderData = {
-        customerInfo,
+        customerInfo: customerInfoWithoutId, // no id field here
         items: orderItems,
         subtotal: calculateSubtotal(),
         tax: calculateTax(),
@@ -254,14 +262,14 @@ const AdminCreateOrder = () => {
         createdAt: new Date().toISOString(),
         createdBy: "admin",
       };
-
+  
       await addDoc(collection(db, "orders"), orderData);
-
+  
       toast({
         title: "Success",
         description: "Order created successfully",
       });
-
+  
       navigate("/admin/orders");
     } catch (error) {
       console.error("Error creating order:", error);
@@ -274,7 +282,7 @@ const AdminCreateOrder = () => {
       setSubmitting(false);
     }
   };
-
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-orange-100/50">
       {/* Header */}
@@ -312,7 +320,7 @@ const AdminCreateOrder = () => {
                 </CardHeader>
                 <CardContent className="p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="relative">
+                  {/* <div className="relative">
                     <Label htmlFor="name">Full Name *</Label>
                     <Input
                       id="name"
@@ -339,8 +347,70 @@ const AdminCreateOrder = () => {
                         ))}
                       </ul>
                     )}
-                  </div>
+                  </div> */}
+                    {/* <div className="mb-4">
+                      <Label htmlFor="selectCustomer">Customer</Label>
+                      <select
+                      id="selectCustomer"
+                      className="mt-1 w-full border rounded px-3 py-2"
+                      onChange={(e) => {
+                        const selectedId = e.target.value;
+                        if (selectedId === "new") {
+                          setCustomerInfo(emptyCustomer); // New customer selected
+                        } else {
+                          const selected = allCustomers.find((c) => c.id === selectedId);
+                          if (selected) setCustomerInfo(selected); // Existing customer
+                        }
+                      }}
+                      value={customerInfo.id ?? "new"}
+                    >
+                      <option value="new">➕ New Customer</option>
+                      {allCustomers.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name} ({c.phone})
+                        </option>
+                      ))}
+                    </select>
 
+
+                    </div> */}
+{/* Select customer dropdown */}
+<div className="mb-4">
+  <Label htmlFor="selectCustomer">Customer</Label>
+  <select
+    id="selectCustomer"
+    className="mt-1 w-full border rounded px-3 py-2"
+    onChange={(e) => {
+      const selectedId = e.target.value;
+      if (selectedId === "new") {
+        setCustomerInfo(emptyCustomer); // New customer selected
+      } else {
+        const selected = allCustomers.find((c) => c.id === selectedId);
+        if (selected) setCustomerInfo(selected); // Existing customer
+      }
+    }}
+    value={customerInfo.id ?? "new"}
+  >
+    <option value="new">➕ New Customer</option>
+    {allCustomers.map((c) => (
+      <option key={c.id} value={c.id}>
+        {c.name} ({c.phone})
+      </option>
+    ))}
+  </select>
+</div>
+
+{/* Inputs to fill out customer details */}
+<div className="mb-4">
+  <Label htmlFor="name">Full Name *</Label>
+  <Input
+    id="name"
+    value={customerInfo.name}
+    onChange={(e) => setCustomerInfo({ ...customerInfo, name: e.target.value })}
+    placeholder="John Doe"
+    className="mt-1 w-full border rounded px-3 py-2"
+  />
+</div>
                       {/* Customer Full Name */}
    
                     <div>
@@ -369,42 +439,19 @@ const AdminCreateOrder = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="city">City</Label>
+                      <Label htmlFor="city">location</Label>
                       <Input
-                        id="city"
-                        value={customerInfo.city}
+                        id="location"
+                        value={customerInfo.location}
                         onChange={(e) =>
-                          setCustomerInfo({ ...customerInfo, city: e.target.value })
+                          setCustomerInfo({ ...customerInfo, location: e.target.value })
                         }
                         placeholder="Cape Town"
                         className="mt-1"
                       />
                     </div>
-                    <div className="md:col-span-2">
-                      <Label htmlFor="address">Address</Label>
-                      <Textarea
-                        id="address"
-                        value={customerInfo.address}
-                        onChange={(e) =>
-                          setCustomerInfo({ ...customerInfo, address: e.target.value })
-                        }
-                        placeholder="Street address, P.O. box, company name, c/o"
-                        className="mt-1"
-                        rows={2}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="postalCode">Postal Code</Label>
-                      <Input
-                        id="postalCode"
-                        value={customerInfo.postalCode}
-                        onChange={(e) =>
-                          setCustomerInfo({ ...customerInfo, postalCode: e.target.value })
-                        }
-                        placeholder="8001"
-                        className="mt-1"
-                      />
-                    </div>
+                   
+                   
                   </div>
                 </CardContent>
               </Card>

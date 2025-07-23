@@ -24,6 +24,7 @@ import Checkout from "./pages/Checkout";
 import OrderSuccess from "./pages/OrderSuccess";
 import { AdminLayout } from "./components/AdminLayout";
 import AdminCreateOrder from "./pages/AdminCreateOrder";
+// import SeedCustomers from "./pages/components/SeedCustomers";
 
 const queryClient = new QueryClient();
 
@@ -89,6 +90,8 @@ const App = () => (
             <Route path="/store" element={<PublicStore />} />
             <Route path="/store/product/:id" element={<ProductDetailsPage />} />
             <Route path="/store/cart" element={<ShoppingCart />} />
+            {/* <Route path="/seed" element={<SeedCustomers />} /> */}
+
             <Route path="/store/checkout" element={<Checkout />} />
             <Route path="/store/success" element={<OrderSuccess />} />
             <Route path="/admin/orders/create" element={<AdminCreateOrder />} />
