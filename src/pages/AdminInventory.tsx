@@ -12,7 +12,7 @@ import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/firebase"; // Adjust path based on your structure
 import { Checkbox } from "@/components/ui/checkbox";
 import VariantsSection from "./VariantsSection"
-// import CategoriesSection from "./CategoriesSection"
+import CategorySelector from "./components/CategorySelector"
 
 import {
   addDoc,
@@ -179,7 +179,7 @@ const AdminInventory = () => {
     setIsModalOpen(true);
   };
   const addProduct = async () => {
-    console.log(formData.variants)
+    console.log(formData)
     if (
       !formData.productID ||
       !formData.name ||
@@ -319,7 +319,7 @@ const AdminInventory = () => {
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
     const matchesCategory =
-      categoryFilter === "all" || product.category === categoryFilter;
+    categoryFilter === "all" || product.category?.toLowerCase() === categoryFilter.toLowerCase();
     return matchesSearch && matchesCategory;
   });
   const handleInputChange = (field, value) => {
@@ -355,6 +355,7 @@ const AdminInventory = () => {
           size: "",
           sellingPrice: "",
           stockPrice: "",
+          category: "",
           stockQuantity: "",
           description: "",
           images: [],
@@ -415,8 +416,6 @@ const totalStockValue = products.reduce((total, product) => {
                   <ArrowLeft className="h-4 w-4" />
                 </Link>
               </Button>
-              <Package className="h-8 w-8 text-primary" />
-              <h1 className="text-2xl font-bold text-foreground">Inventory Management</h1>
             </div>
 
             <div className="flex items-center space-x-4">
@@ -460,20 +459,13 @@ const totalStockValue = products.reduce((total, product) => {
 
                   <div>
                   <Label htmlFor="category">Category *</Label>
-                  <input
-                    id="category"
-                    list="category-list"
-                    placeholder="Category"
-                    value={formData.category}
-                    onChange={(e) => handleInputChange("category", e.target.value)}
-                    className="border rounded p-1 w-full"
-                  />
-                  <datalist id="category-list">
-                    {categories.map((cat) => (
-                      <option key={cat} value={cat} />
-                    ))}
-                  </datalist>
-                </div>
+
+                        <CategorySelector
+                          value={formData.category}
+                          onChange={(value) => handleInputChange("category", value)}
+                        />
+
+                   </div>
 
                   <div>
                     <Label htmlFor="supplier">Supplier *</Label>
