@@ -10,10 +10,6 @@ import { collection, getDocs, addDoc } from "firebase/firestore";
 import { db } from "@/firebase";
 import { motion } from "framer-motion";
 import { updateDoc, doc ,getDoc,arrayUnion, arrayRemove } from "firebase/firestore";
-// import React, { useEffect, useState } from "react";
-// import { useNavigate } from "react-router-dom";
-// import { toast } from "your-toast-lib"; // adjust accordingly
-
 import { toast } from "@/hooks/use-toast";
 import {
   ArrowLeft,
