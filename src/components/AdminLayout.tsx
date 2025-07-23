@@ -63,7 +63,7 @@ const menuItems = [
     icon: DollarSign,
     items: [
       { title: "Expenses", url: "/admin/finance/expenses" },
-      { title: "Reports", url: "#" },
+      // { title: "Reports", url: "#" },
     ],
   },
   {
@@ -71,7 +71,7 @@ const menuItems = [
     icon: Settings,
     items: [
       { title: "Business Info", url: "/admin/settings/business-info" },
-      { title: "General", url: "#" },
+      // { title: "General", url: "#" },
     ],
   },
 ];
