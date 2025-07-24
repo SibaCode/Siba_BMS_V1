@@ -16,7 +16,6 @@ import {
   ShoppingBag
 } from "lucide-react";
 import { useState,useEffect } from "react";
-// import { useCart } from "@/contexts/CartContext";
 import { collection, getDocs } from "firebase/firestore";
 // import { useToast } from "@/hooks/use-toast";
 import { db } from "@/firebase"; 

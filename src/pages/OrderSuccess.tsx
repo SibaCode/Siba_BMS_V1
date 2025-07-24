@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { useCart, Order } from "@/contexts/CartContext";
 import { 
   CheckCircle, 
   Package, 
@@ -16,7 +15,7 @@ import {
 } from "lucide-react";
 
 const OrderSuccess = () => {
-  const { lastOrder } = useCart();
+  const { lastOrder } = useState([]);
   const [order, setOrder] = useState<Order | null>(null);
 
   useEffect(() => {

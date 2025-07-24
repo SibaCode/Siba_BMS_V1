@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useCart } from "@/contexts/CartContext";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/firebase";
 
@@ -22,7 +21,6 @@ import {
 const PublicStore = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const { addItem, itemCount } = useCart();
 
   const [products, setProducts] = useState<any[]>([]);
   useEffect(() => {
@@ -51,15 +49,6 @@ const PublicStore = () => {
     return matchesSearch && matchesCategory;
   });
 
-  const handleAddToCart = (product: any) => {
-    addItem({
-      id: product.productID,
-      name: product.name,
-      price: product.price,
-      category: product.category,
-      image:product.image
-    });
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -76,15 +65,7 @@ const PublicStore = () => {
                 <Link to="/admin">Admin Panel</Link>
               </Button>
               <Button asChild className="relative">
-                <Link to="/store/cart">
-                  <ShoppingCart className="h-4 w-4 mr-2" />
-                  Cart
-                  {itemCount > 0 && (
-                    <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center text-xs">
-                      {itemCount}
-                    </Badge>
-                  )}
-                </Link>
+               
               </Button>
             </div>
           </div>
@@ -174,13 +155,6 @@ const PublicStore = () => {
                       <Eye className="h-4 w-4 mr-2" />
                       View Details
                     </Link>
-                  </Button>
-                  <Button
-                    size="sm"
-                    className="flex-1"
-                    onClick={() => handleAddToCart(product)}
-                  >
-                    Add to Cart
                   </Button>
                 </div>
               </CardContent>

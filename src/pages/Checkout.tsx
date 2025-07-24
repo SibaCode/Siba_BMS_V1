@@ -10,7 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { 
   ArrowLeft, 
@@ -34,7 +33,7 @@ interface CheckoutFormData {
 }
 
 const Checkout = () => {
-  const { items, subtotal,total, createOrder } = useCart();
+  const { items, subtotal,total, createOrder } = useState([]);
   const { toast } = useToast();
   const navigate = useNavigate();
   const [paymentMethod, setPaymentMethod] = useState("yoco");

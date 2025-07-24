@@ -9,7 +9,6 @@ import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/firebase";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
-import { useBusinessInfo } from "@/pages/components/BusinessInfoContext";
 import { collection, getDocs } from "firebase/firestore";
 
 interface Variant {

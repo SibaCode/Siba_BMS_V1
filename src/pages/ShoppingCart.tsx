@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { useCart } from "@/contexts/CartContext";
 import { 
   ArrowLeft, 
   ShoppingCart as CartIcon, 
@@ -15,7 +14,7 @@ import {
 } from "lucide-react";
 
 const ShoppingCart = () => {
-  const { items, updateQuantity, removeItem, subtotal, total, itemCount } = useCart();
+  const { items, updateQuantity, removeItem, subtotal, total, itemCount } = useState([]);
 
   return (
     <div className="min-h-screen bg-background">

@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, ShoppingCart, Minus, Plus } from "lucide-react";
-import { useCart } from "@/contexts/CartContext";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/firebase";
 
@@ -36,7 +35,7 @@ type Variant = {
 
 const ProductDetailsPage = () => {
   const { id } = useParams();
-  const { addItem } = useCart();
+  const { addItem } = useState([]);
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
